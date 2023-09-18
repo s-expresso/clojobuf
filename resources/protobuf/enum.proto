@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package my.ns.enum;
+
+enum Enum {
+    MINUS_ONE = -1;
+    ZERO = 0;
+    ONE = 1;
+    TWO = 2;
+    THREE = 3;
+    FOUR = 4;
+    FIVE = 5;
+}
+
+enum EnumV {
+    DEFAULT = 0;
+    V1 = 1;
+    V2 = 2;
+    V3 = 3;
+    V1000 = 1000;
+}

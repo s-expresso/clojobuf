@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "enum.proto";
+import "packed.proto";
+import "singular.proto";
+
+package my.ns.map;
+
+message Mappy {
+    map<uint32, sint64>            uint32_sint64 = 1;
+    map<int64, string>             int64_string  = 2;
+    map<fixed32, double>           fixed32_double = 3;
+    map<sfixed64, enum.Enum>       sfixed64_enum = 4;
+    map<sint64, singular.Singular> sint64_singular = 5;
+    map<uint64, packed.Packed>     uint64_packed = 6;
+}

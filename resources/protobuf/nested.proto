@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "enum.proto";
+import "map.proto";
+import "oneof.proto";
+import "packed.proto";
+import "repeat.proto";
+import "singular.proto";
+
+package my.ns.nested;
+
+message Msg1 {
+    enum.Enum enum = 1;
+    message Msg2 {
+        singular.Singular singular = 1;
+        message Msg3 {
+            packed.Packed packed = 1;
+            repeat.Repeat repeat = 2;
+            message Msg4 {
+                map.Mappy mappy = 1;
+                message Msg5 {
+                    oneof.Either either = 1;
+                }
+                Msg5 nested5 = 5;
+            }
+            Msg4 nested4 = 4;
+            Msg4.Msg5 nested5 = 5;
+        }
+        Msg3 nested3 = 3;
+        Msg3.Msg4 nested4 = 4;
+        Msg3.Msg4.Msg5 nested5 = 5;
+    }
+    Msg2 nested2 = 2;
+    Msg2.Msg3 nested3 = 3;
+    Msg2.Msg3.Msg4 nested4 = 4;
+    Msg2.Msg3.Msg4.Msg5 nested5 = 5;
+}

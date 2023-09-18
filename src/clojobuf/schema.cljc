@@ -141,7 +141,6 @@
             :enum    (recur (inc idx) syntax                package     (conj reg (xform-enm syntax package form)))
             (recur          (inc idx) syntax                package     reg))))))
 
-
 (defn gen-registries
   "Generate codec and malli registries and return them as a tuple."
   [paths files]

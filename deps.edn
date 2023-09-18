@@ -4,12 +4,11 @@
         com.google.javascript/closure-compiler-unshaded {:mvn/version "v20230103"}
         metosin/malli {:mvn/version "0.11.0"}
         s-expresso/rubberbuf {:git/url "https://github.com/s-expresso/rubberbuf.git"
-                              :git/sha "1203a7c1314262851e6f65bba5478f5ebb588e18"
-                              :git/tag "v0.1.4"}
+                              :git/sha "639eae93fa5e6c15d227e3293954c312c18b96ef"
+                              :git/tag "v0.1.5"}
         s-expresso/clojobuf-codec {:git/url "https://github.com/s-expresso/clojobuf-codec.git"
-                                   :git/sha "06f06283ea6c65765776dffb521e8ccfaf0711ce"
-                                   :git/tag "v0.1.1"}
-        com.rpl/specter {:mvn/version "1.1.4"}}
+                                   :git/sha "dcd306b4c0830814a9b4eac297bf76d2933895cf"
+                                   :git/tag "v0.1.2"}}
  :aliases {:test {:extra-paths ["test"]
                   ;:patterns [".*"]
                   :extra-deps {io.github.cognitect-labs/test-runner

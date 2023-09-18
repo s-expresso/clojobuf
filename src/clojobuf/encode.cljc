@@ -13,8 +13,9 @@
   (let [[fid typ rori _] field-schema]
     (cond
       (not (sequential? value))
-      (when-not (or (nil? rori) ; proto3 implicit
-                    (= value (default-pri typ))) ; TODO comparison of bytes type always false 
+      (when-not (and (nil? rori) ; proto3 implicit
+                     (not= typ :bytes)
+                     (= value (default-pri typ)))
         (write-pri writer fid typ value))
 
       (= typ :bytes)
@@ -96,7 +97,11 @@
               field-schema (msg-schema k)]
           (cond
             (oneof? field-schema)
-            (encode-prifield writer proto2|3 (msg-schema v) (msg v)) ; value of oneof == key of actual field in msg
+            ; value of oneof == key of actual field in msg
+            (let [target-field-schema (msg-schema v)]
+              (if (msg|enum? target-field-schema)
+                (encode-msgfield|enumfield writer codec-registry target-field-schema (msg v))
+                (encode-prifield writer proto2|3 target-field-schema (msg v))))
 
             (msg|enum? field-schema)
             (encode-msgfield|enumfield writer codec-registry field-schema v)
@@ -117,10 +122,3 @@
   (encode-msg codec-registry
               (codec-registry msg-id)
               msg))
-
-(def codec_malli (gen-registries ["resources/protobuf/"] ["reference.proto"]))
-(def codec (first codec_malli))
-
-(encode codec :Packed {:string_val ["abcd"]
-                       :int32_val 1234
-                       :enum_val :THREE})

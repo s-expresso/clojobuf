@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+import "enum.proto";
+import "singular.proto";
+
+package my.ns.repeat;
+
+message Repeat {
+    // wire-type 0
+    repeated int32 int32_val       = 1;
+    repeated int64 int64_val       = 2;
+    repeated uint32 uint32_val     = 3;
+    repeated uint64 uint64_val     = 4;
+    repeated sint32 sint32_val     = 5;
+    repeated sint64 sint64_val     = 6;
+    repeated bool bool_val         = 7;
+    repeated enum.Enum enum_val    = 8;
+    // wire-type 1
+    repeated fixed64 fixed64_val   = 9;
+    repeated sfixed64 sfixed64_val = 10;
+    repeated double double_val     = 11;
+    // wire-type 2
+    repeated string string_val     = 12;
+    repeated bytes bytes_val       = 13;
+    // wire-type 5
+    repeated fixed32 fixed32_val   = 14;
+    repeated sfixed32 sfixed32_val = 15;
+    repeated float float_val       = 16;
+
+    // message
+    repeated singular.Singular singular_msg = 17;
+}
