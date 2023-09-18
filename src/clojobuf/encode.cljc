@@ -1,7 +1,6 @@
 (ns clojobuf.encode
   (:require [clojobuf-codec.encode :refer [write-bytes write-packed write-pri]]
             [clojobuf-codec.io.writer :refer [make-writer ->bytes]]
-            [clojobuf.schema :refer [gen-registries]]
             [clojobuf.util :refer [fid rori ktype-vtype msg|enum? map?? msg|enum-id packed? packable? default-enum-val default-pri]]))
 
 (defn oneof? [field-def] (= (first field-def) :oneof))
@@ -112,13 +111,3 @@
             :else (encode-prifield writer proto2|3 field-schema v)))
         (recur (inc idx))))
     (->bytes writer)))
-
-(defn encode
-  "Encode a message and return its protobuf binary.
-   codec-registry: registry of codec from clojobuf.schema.gen-registries
-   msg-id:         message id with ns scope, e.g. :my.ns.scope/MsgA.MsgB
-   msg:            message to be encoded"
-  [codec-registry msg-id msg]
-  (encode-msg codec-registry
-              (codec-registry msg-id)
-              msg))
