@@ -1,0 +1,26 @@
+syntax = "proto2";
+package my.pb.ns;
+
+enum Enum {
+    MINUS_ONE = -1;
+    ZERO = 0;
+    ONE = 1;
+}
+
+message Msg {
+    optional int32 int32_val        = 1;
+    optional string string_val      = 2;
+    optional bool bool_val          = 3;
+    optional Enum enum_val          = 4;
+    oneof either {
+        sint32 sint32_val           = 5;
+        sint64 sint64_val           = 6;
+    }
+    map<int64, string> int64_string = 7;
+    repeated double double_vals     = 8;
+}
+
+message Msg2 {
+    optional Msg msg1  = 1;
+    repeated Msg msg1s = 2;
+}
