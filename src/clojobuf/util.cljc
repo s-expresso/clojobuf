@@ -38,3 +38,6 @@
     :string ""
     0)) ; all other pri-types are numeric
 
+(defn raise [err-txt]
+  #?(:clj (throw (Exception. err-txt)))
+  #?(:cljs (throw (js/Error err-txt))))

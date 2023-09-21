@@ -1,11 +1,10 @@
 (ns clojobuf.example.ex1
-  (:require [clojobuf.core :refer [encode decode gen-registries]]))
+  (:require [clojobuf.core :refer [encode decode find-fault protoc]]))
 
-(def codec_malli (gen-registries ["resources/protobuf/"] ["example.proto"]))
-; [<codec schemas> <malli schemas>] ; with the latter still WIP
+; first use protoc to compile a registry
+(def registry (protoc ["resources/protobuf/"] ["example.proto"]))
 
-(def codec-schemas (first codec_malli))
-
+; message to be encoded
 (def msg {:int32_val -1,
           :string_val "abc",
           :bool_val false,
@@ -15,13 +14,24 @@
           :int64_string {1 "abc", 2 "def"}
           :double_vals [0.0, 1.0, 2.0]})
 
-
-(def binary (encode codec-schemas :my.pb.ns/Msg msg))
-(decode codec-schemas :my.pb.ns/Msg binary)
-; get back a map identical to msg
-
-
+; message to be encoded
 (def msg2 {:msg1 msg, :msg1s [msg, msg]})
-(def binary2 (encode codec-schemas :my.pb.ns/Msg2 msg2))
-(decode codec-schemas :my.pb.ns/Msg2 binary2)
-; get back a map identical to msg2
+
+;-------------------------------------------------------------------
+; Success case
+;-------------------------------------------------------------------
+(def binary (encode registry :my.pb.ns/Msg msg))
+(decode registry :my.pb.ns/Msg binary)
+; => msg
+
+(def binary2 (encode registry :my.pb.ns/Msg2 msg2))
+(decode registry :my.pb.ns/Msg2 binary2)
+; => msg2
+
+;-------------------------------------------------------------------
+; Error case
+;-------------------------------------------------------------------
+(let [bin (encode registry :my.pb.ns/Msg {:this-field-doesnt-exists 0})]
+  (when (nil? bin)
+    (find-fault registry :my.pb.ns/Msg {:this-field-doesnt-exists 0})))
+; => {:this-field-doesnt-exists ["disallowed key"]}

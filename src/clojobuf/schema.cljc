@@ -119,7 +119,7 @@
 (defn- vld-msg-children-processor
   "msg-children are child nodes within message; each can be :field, :mapField, :oneof or :option."
   [msg-children]
-  (loop [idx 0, main [:map {:close true}], funcs []]
+  (loop [idx 0, main [:map {:closed true}], funcs []]
     (if (< idx (count msg-children))
       (let [msg-child (nth msg-children idx)]
         (condp = (first msg-child)

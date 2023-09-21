@@ -1,10 +1,8 @@
 (ns clojobuf.test-schema-codec
-  (:require [clojobuf.core :refer [gen-registries]]
-            [clojure.test :refer [is deftest run-tests]]
-            [malli.core :as m]
-            [malli.registry :as mr]))
+  (:require [clojobuf.core :refer [protoc]]
+            [clojure.test :refer [is deftest run-tests]]))
 
-(def codec_malli (gen-registries ["resources/protobuf/"] ["nested.proto"]))
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto"]))
 (def codec-schema (first codec_malli))
 
 (deftest test-schema-codec-enum
