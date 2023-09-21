@@ -1,9 +1,7 @@
 (ns clojobuf.test-codec
   (:require [clojobuf.core :refer [encode decode protoc find-fault]]
             [clojure.test :refer [is deftest run-tests]]
-            [malli.core :as m]
-            [malli.error :as me]
-            [malli.registry :as mr]))
+            [malli.core :as m]))
 
 (def registry (protoc ["resources/protobuf/"] ["nested.proto"]))
 
@@ -11,8 +9,6 @@
   (->> msg
        (encode registry msg-id)
        (decode registry msg-id)))
-
-(find-fault registry :my.ns.map/Mappy {:a :b})
 
 (m/validate [:ref :my.ns.map/Mappy] {:a :b} (second registry))
 
