@@ -1,4 +1,6 @@
-(ns clojobuf.schema)
+(ns clojobuf.schema
+  (:require [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
+            [clojure.set :refer [map-invert]]))
 
 (defn- qualify-name [package name]
   (keyword (if (empty? package) name (str package "/" name))))
@@ -63,37 +65,41 @@
                :oneof (bxform-oneof msg-child))))
 
 ; -------------------- msg validator -----------------------------
-(defn- get-checker [typ]
-  (cond
-    (string? typ) [:ref (keyword typ)]
-    (#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64} typ) 'int?
-    (= typ :string) 'string?
-    (= typ :bytes) 'bytes?
-    (= typ :float) 'float?
-    (= typ :double) 'double?
-    (= typ :bool) 'boolean?))
+(def vschemas-int {:int32     [:int {:min sint32-min, :max sint32-max}]
+                   :sint32    [:int {:min sint32-min, :max sint32-max}]
+                   :sfixed32  [:int {:min sint32-min, :max sint32-max}]
+                   :uint32    [:int {:min uint32-min, :max uint32-max}]
+                   :fixed32   [:int {:min uint32-min, :max uint32-max}]
+                   :int64     [:int {:min sint64-min, :max sint64-max}]
+                   :sint64    [:int {:min sint64-min, :max sint64-max}]
+                   :sfixed64  [:int {:min sint64-min, :max sint64-max}]
+                   :uint64    [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
+                                                                     (>= v 0)
+                                                                     (<= v uint64-max)))]]
+                   :fixed64   [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
+                                                                     (>= v 0)
+                                                                     (<= v uint64-max)))]]})
 
 (defn- get-malli-type [typ]
   (cond
     (string? typ) [:ref (keyword typ)]
-    (#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64} typ) :int
-    (= typ :string) :string
     (= typ :bytes) 'bytes? ; TODO is this correct?
-    (= typ :float) :double
-    (= typ :double) :double
-    (= typ :bool) :boolean))
+    (= typ :float) :double ; TODO is this correct?
+    (= typ :bool) :boolean
+    #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double} typ)
+    :else typ))
 
 (defn- vxform-field [[_ rori typ name field-id options]]
   (condp = rori
-    :required [(keyword name) (get-checker typ)]
-    :repeated [(keyword name) {:optional true} [:vector (get-checker typ)]]
-    [(keyword name) {:optional true} (get-checker typ)]))
+    :required [(keyword name) (get-malli-type typ)]
+    :repeated [(keyword name) {:optional true} [:vector (get-malli-type typ)]]
+    [(keyword name) {:optional true} (get-malli-type typ)]))
 
 (defn- vxform-map-field [[_ ktype vtype name field-id options]]
   [(keyword name) {:optional true} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
 
 (defn- vxform-oneof-field [[_ typ name field-id options]]
-  [(keyword name) {:optional true} (get-checker typ)])
+  [(keyword name) {:optional true} (get-malli-type typ)])
 
 (defn- vxform-oneof
   "[:oneof 'either'
@@ -151,14 +157,22 @@
         tuples (reduce enum-child-reducer [] (drop 2 enm))
         default (-> tuples first first) ; for enum, the first entry is the default value
         ->bin (into {} tuples)
-        <-bin (clojure.set/map-invert ->bin)
+        <-bin (map-invert ->bin)
         validator (into [:enum] (keys ->bin))]
     [{fullname {:syntax syntax, :type :enum, :default default :encode ->bin, :decode <-bin}}
      {fullname validator}]))
 
 ; ----------------------- ast -------------------------------
-(defn xform-ast [ast]
-  (loop [idx 0, syntax 3, package "", reg []]
+(defn xform-ast
+  "returns a vector of vec2, e.g.
+    [ [{:a.b/m1 ...} {:a.b/m1 ...}]
+      [{:a.b/m2 ...} {:a.b/m2 ...}]
+      ...]
+   where:
+     * (first vec2)  is n single entry of codec schema
+     * (second vec2) is a single entry of malli schema"
+  [ast]
+  (loop [idx 0, syntax 3, package "", reg [[nil vschemas-int]]] ; inject vschemas-int
     (if (>= idx (count ast)) reg ; terminate loop and return reg
         (let [form (nth ast idx)]
           (condp = (first form)
