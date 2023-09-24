@@ -5,7 +5,7 @@
             [malli.core :as m]
             [malli.registry :as mr]))
 
-(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto"]
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto"]
                          :malli-composite-registry false))
 (def malli-schema (second codec_malli))
 (def registry {:registry (mr/composite-registry
@@ -290,5 +290,12 @@
 
      (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val (+ sint64-max 1N)} registry)))
      (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val (- sint64-min 1N)} registry)))))
+
+
+(deftest test-no-package
+  (is (= (malli-schema :./Msg1)           [:map {:closed true} [:int32_val {:optional true} :int32]]))
+  (is (= (malli-schema :./MsgA)           [:map {:closed true} [:int32_val {:optional true} :int32]]))
+  (is (= (malli-schema :./MsgA.MsgB)      [:map {:closed true} [:int64_val {:optional true} :int64]]))
+  (is (= (malli-schema :./MsgA.MsgB.MsgC) [:map {:closed true} [:uint32_val {:optional true} :uint32]])))
 
 (run-tests)

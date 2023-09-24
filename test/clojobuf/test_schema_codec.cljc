@@ -2,7 +2,7 @@
   (:require [clojobuf.core :refer [protoc]]
             [clojure.test :refer [is deftest run-tests]]))
 
-(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto"]))
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto"]))
 (def codec-schema (first codec_malli))
 
 (deftest test-schema-codec-enum
@@ -276,5 +276,23 @@
            16 [:float_val :float :optional nil],
            10 [:sfixed64_val :sfixed64 :optional nil],
            8 [:enum_val "my.ns.enum/Enum" :optional nil]}})))
+
+(deftest test-schema-codec-no-package
+  (is (= (codec-schema :Msg1) {:syntax :proto2,
+                               :type :msg,
+                               :encode {:int32_val [1 :int32 :optional nil]},
+                               :decode {1 [:int32_val :int32 :optional nil]}}))
+  (is (= (codec-schema :MsgA) {:syntax :proto2,
+                               :type :msg,
+                               :encode {:int32_val [1 :int32 :optional nil]},
+                               :decode {1 [:int32_val :int32 :optional nil]}}))
+  (is (= (codec-schema :MsgA.MsgB) {:syntax :proto2,
+                                    :type :msg,
+                                    :encode {:int64_val [1 :int64 :optional nil]},
+                                    :decode {1 [:int64_val :int64 :optional nil]}}))
+  (is (= (codec-schema :MsgA.MsgB.MsgC) {:syntax :proto2,
+                                         :type :msg,
+                                         :encode {:uint32_val [1 :uint32 :optional nil]},
+                                         :decode {1 [:uint32_val :uint32 :optional nil]}})))
 
 (run-tests)
