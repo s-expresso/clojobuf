@@ -65,28 +65,28 @@
                :oneof (bxform-oneof msg-child))))
 
 ; -------------------- msg validator -----------------------------
-(def vschemas-int {:int32     [:int {:min sint32-min, :max sint32-max}]
-                   :sint32    [:int {:min sint32-min, :max sint32-max}]
-                   :sfixed32  [:int {:min sint32-min, :max sint32-max}]
-                   :uint32    [:int {:min uint32-min, :max uint32-max}]
-                   :fixed32   [:int {:min uint32-min, :max uint32-max}]
-                   :int64     [:int {:min sint64-min, :max sint64-max}]
-                   :sint64    [:int {:min sint64-min, :max sint64-max}]
-                   :sfixed64  [:int {:min sint64-min, :max sint64-max}]
-                   :uint64    [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
-                                                                     (>= v 0)
-                                                                     (<= v uint64-max)))]]
-                   :fixed64   [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
-                                                                     (>= v 0)
-                                                                     (<= v uint64-max)))]]})
+(def vschemas-pb-types {:int32     [:int {:min sint32-min, :max sint32-max}]
+                        :sint32    [:int {:min sint32-min, :max sint32-max}]
+                        :sfixed32  [:int {:min sint32-min, :max sint32-max}]
+                        :uint32    [:int {:min uint32-min, :max uint32-max}]
+                        :fixed32   [:int {:min uint32-min, :max uint32-max}]
+                        :int64     [:int {:min sint64-min, :max sint64-max}]
+                        :sint64    [:int {:min sint64-min, :max sint64-max}]
+                        :sfixed64  [:int {:min sint64-min, :max sint64-max}]
+                        :uint64    [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
+                                                                          (>= v 0)
+                                                                          (<= v uint64-max)))]]
+                        :fixed64   [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
+                                                                          (>= v 0)
+                                                                          (<= v uint64-max)))]]
+                        :bytes     #?(:clj 'bytes? :cljs [:fn (fn [v] (= js/Uint8Array (type v)))])})
 
 (defn- get-malli-type [typ]
   (cond
     (string? typ) [:ref (keyword typ)]
-    (= typ :bytes) 'bytes? ; TODO is this correct?
     (= typ :float) :double ; TODO is this correct?
     (= typ :bool) :boolean
-    #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double} typ)
+    #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double :bytes} typ)
     :else typ))
 
 (defn- vxform-field [[_ rori typ name field-id options]]
@@ -172,7 +172,7 @@
      * (first vec2)  is n single entry of codec schema
      * (second vec2) is a single entry of malli schema"
   [ast]
-  (loop [idx 0, syntax 3, package "", reg [[nil vschemas-int]]] ; inject vschemas-int
+  (loop [idx 0, syntax 3, package "", reg [[nil vschemas-pb-types]]] ; inject vschemas-pb-types
     (if (>= idx (count ast)) reg ; terminate loop and return reg
         (let [form (nth ast idx)]
           (condp = (first form)
