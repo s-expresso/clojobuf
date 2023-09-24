@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+package my.ns.extension;
+
+message Extendable {
+    optional int32 int32_val = 1;
+    optional int64 int64_val = 2;
+    extensions 100 to 200;
+}
+
+message Msg1 {
+    extend Extendable {
+        optional double double_val = 100;
+    }
+}
+
+extend Extendable {
+    optional string string_val = 101;
+}

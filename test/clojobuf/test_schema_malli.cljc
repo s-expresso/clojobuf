@@ -5,7 +5,7 @@
             [malli.core :as m]
             [malli.registry :as mr]))
 
-(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto"]
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]
                          :malli-composite-registry false))
 (def malli-schema (second codec_malli))
 (def registry {:registry (mr/composite-registry
@@ -297,5 +297,13 @@
   (is (= (malli-schema :./MsgA)           [:map {:closed true} [:int32_val {:optional true} :int32]]))
   (is (= (malli-schema :./MsgA.MsgB)      [:map {:closed true} [:int64_val {:optional true} :int64]]))
   (is (= (malli-schema :./MsgA.MsgB.MsgC) [:map {:closed true} [:uint32_val {:optional true} :uint32]])))
+
+(deftest test-extension
+  (is (= (malli-schema :my.ns.extension/Extendable) [:map
+                                                     {:closed true}
+                                                     [:int32_val {:optional true} :int32]
+                                                     [:int64_val {:optional true} :int64]
+                                                     [:my.ns.extension/Msg1.double_val {:optional true} :double]
+                                                     [:my.ns.extension/string_val {:optional true} :string]])))
 
 (run-tests)

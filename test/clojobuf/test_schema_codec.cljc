@@ -2,7 +2,7 @@
   (:require [clojobuf.core :refer [protoc]]
             [clojure.test :refer [is deftest run-tests]]))
 
-(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto"]))
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]))
 (def codec-schema (first codec_malli))
 
 (deftest test-schema-codec-enum
@@ -294,5 +294,20 @@
                                          :type :msg,
                                          :encode {:uint32_val [1 :uint32 :optional nil]},
                                          :decode {1 [:uint32_val :uint32 :optional nil]}})))
+
+(deftest test-extension
+  (is (= (codec-schema :my.ns.extension/Extendable)
+         {:syntax :proto2,
+          :type :msg,
+          :encode
+          {:int32_val [1 :int32 :optional nil],
+           :int64_val [2 :int64 :optional nil],
+           :my.ns.extension/Msg1.double_val [100 :double :optional nil],
+           :my.ns.extension/string_val [101 :string :optional nil]},
+          :decode
+          {1 [:int32_val :int32 :optional nil],
+           2 [:int64_val :int64 :optional nil],
+           100 [:my.ns.extension/Msg1.double_val :double :optional nil],
+           101 [:my.ns.extension/string_val :string :optional nil]}})))
 
 (run-tests)
