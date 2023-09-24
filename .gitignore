@@ -1,0 +1,15 @@
+pom.xml.asc
+*.jar
+*.class
+/lib/
+/classes/
+/cljs-test-runner-out/
+/node_modules/
+/target/
+.calva
+.clj-kondo
+.cljs_node_repl/
+.cpcache/
+.lsp
+.nrepl-port
+.shadow-cljs
