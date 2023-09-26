@@ -44,7 +44,10 @@
   (rt :my.ns.oneof/Either {:either :sfixed32_val, :sfixed32_val 0})
   (rt :my.ns.oneof/Either {:either :float_val, :float_val 0.0})
   (rt :my.ns.oneof/Either {:either :singular_msg, :singular_msg {}})
-  (rt :my.ns.oneof/Either {:either :packed_msg, :packed_msg {}}))
+  (rt :my.ns.oneof/Either {:either :singular_msg, :singular_msg {:int32_val 1}})
+  (rt :my.ns.oneof/Either {:either :packed_msg, :packed_msg {}})
+  (rt :my.ns.oneof/Either {:either :packed_msg, :packed_msg {:int32_val [1]}}))
+
 
 (deftest test-codec-singular
   (rt :my.ns.singular/Singular {:int32_val    -1})
@@ -144,6 +147,14 @@
                             :float_val  [-1.0 0.0 1.0]}))
 
 (deftest test-codec-nested
+  (rt :my.ns.nested/Msg1 {:nested2 {}
+                          :nested3 {}
+                          :nested4 {}
+                          :nested5 {}})
+  (rt :my.ns.nested/Msg1 {:nested2 {:nested3 {:nested4 {:nested5 {}}}}
+                          :nested3 {:nested4 {:nested5 {}}}
+                          :nested4 {:nested5 {}}
+                          :nested5 {}})
   (rt :my.ns.nested/Msg1 {:enum :ZERO
                           :nested2
                           {:nested3
