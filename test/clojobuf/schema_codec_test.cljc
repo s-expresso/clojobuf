@@ -1,4 +1,4 @@
-(ns clojobuf.test-schema-codec
+(ns clojobuf.schema-codec-test
   (:require [clojobuf.core :refer [protoc]]
             [clojure.test :refer [is deftest run-tests]]))
 
@@ -309,5 +309,3 @@
            2 [:int64_val :int64 :optional nil],
            100 [:my.ns.extension/Msg1.double_val :double :optional nil],
            101 [:my.ns.extension/string_val :string :optional nil]}})))
-
-(run-tests)

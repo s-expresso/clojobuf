@@ -1,4 +1,4 @@
-(ns clojobuf.test-util
+(ns clojobuf.util-test
   (:require [clojobuf.util :refer [default-opt default-enum-val]]
             [clojure.test :refer [is deftest run-tests]]))
 
@@ -32,5 +32,3 @@
           enum-schema [8 "enum.Enum" :optional [["dummy" :ONE]]]) :MINUS_ONE))
   (is (= (default-enum-val
           enum-schema [8 "enum.Enum" :optional [["dummy" :ONE] ["default" :ONE]]]) :ONE)))
-
-(run-tests)

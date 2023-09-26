@@ -1,4 +1,4 @@
-(ns clojobuf.test-schema-malli
+(ns clojobuf.schema-malli-test
   (:require [clojobuf.core :refer [protoc]]
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojure.test :refer [is deftest run-tests]]
@@ -305,5 +305,3 @@
                                                      [:int64_val {:optional true} :int64]
                                                      [:my.ns.extension/Msg1.double_val {:optional true} :double]
                                                      [:my.ns.extension/string_val {:optional true} :string]])))
-
-(run-tests)
