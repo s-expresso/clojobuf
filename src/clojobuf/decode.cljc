@@ -1,8 +1,6 @@
 (ns clojobuf.decode
   (:require [clojobuf-codec.io.reader :refer [make-reader available?]]
-            [clojobuf.encode :refer [encode]]
             [clojobuf-codec.decode :refer [read-len-coded-bytes read-packed read-pri read-raw-wire read-tag]]
-            [clojobuf.schema :refer [gen-registries]]
             [clojobuf.util :refer [fname typ ktype-vtype repeated? msg|enum? map?? msg|enum-id]]))
 
 (defn oneof? [field-def] (let [form (nth field-def 2)]
@@ -17,7 +15,7 @@
     0 (#{:int32 :int64 :uint32 :uint64 :sint32 :sint64 :bool :enum} pri-type)
     1 (#{:fixed64 :sfixed64 :double} pri-type)
     2 (#{:string :bytes} pri-type)
-    5 (#{:fixed32 :sfixed32 float} pri-type)))
+    5 (#{:fixed32 :sfixed32 :float} pri-type)))
 
 (declare decode-msg)
 
@@ -35,7 +33,9 @@
       (= wire-type 2)
       [(fname field-schema) (read-packed reader pri-type)]
       ; unexpected wire-type
-      :else [fid (read-raw-wire reader wire-type)])))
+      :else (do
+              (println "unexpected")
+              [fid (read-raw-wire reader wire-type)]))))
 
 (defn decode-mapField
   "Return a map with 1 entry, e.g. {23 12345}, or return field-id/wire-value pair
@@ -100,12 +100,13 @@
    (5) unknown:   [<field-id> <wire-value>]
 
    Uknown field is concat into fields as {:? [<field-id> <wire-type> <wire-value>]}"
-  [fields field wire-type ?repeated]
+  [fields field wire-type ?repeated ?map]
   (let [[fid val] field]
     (cond
       (number? fid) (merge-with into fields {:? [[fid wire-type val]]})
       ?repeated     (let [val (if (sequential? val) val [val])]
                       (merge-with into fields {fid val}))
+      ?map          (merge-with into fields {fid val})
       :else         (let [val (if (sequential? val) (last val) val)] ; val shouldn't be sequential for non-repeated field, but we just check anyway to be safe
                       (merge fields {fid val})))))
 
@@ -121,7 +122,7 @@
                       (msg|enum? field-schema) (decode-msgField|enumField reader codec-registry wire-type fid field-schema)
                       (map??     field-schema) (decode-mapField           reader codec-registry wire-type fid field-schema)
                       :else                    (decode-priField           reader                wire-type fid field-schema))
-              merged (merge-msgfield msg tuple wire-type (repeated? field-schema))
+              merged (merge-msgfield msg tuple wire-type (repeated? field-schema) (map?? field-schema))
               merged (if (oneof? field-schema) (conj merged {(oneof-label field-schema) (fname field-schema)}) merged)]
           (recur merged)) ; TODO need a better conj to handle repeated + inject oneof-selector
         msg))))
@@ -135,16 +136,3 @@
   (decode-msg codec-registry
               (codec-registry msg-id)
               bin))
-
-
-(def codec_malli (gen-registries ["resources/protobuf/"] ["reference.proto"]))
-(def codec (first codec_malli))
-
-(def bin (encode codec :Singular {:string_val "abcd"
-                                  :int32_val 1234
-                                  :enum_val :THREE}))
-
-(decode codec :Singular bin)
-
-(def bin2 (encode codec :Packed {:string_val ["abc"]}))
-(decode codec :Packed bin2)

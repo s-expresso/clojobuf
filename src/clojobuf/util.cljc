@@ -23,7 +23,7 @@
                                       true?)))
 (defn packable? [typ] (and (keyword? typ) (not= typ :bytes) (not= typ :string)))
 
-(defn default-opt   [options] (->> options (some #(= (first %) "default")) #(when-not (nil? %) (second %))))
+(defn default-opt   [options] (->> options (some #(when (= (first %) "default") %)) second))
 
 (defn default-enum-val
   "Use field's default option if available, else first enum val in enum-def is default."
@@ -31,11 +31,10 @@
   (or (default-opt (options field-def)) (enum-def :default)))
 
 (defn default-pri
-  "Get default value of primitive type."
+  "Get default value of primitive type; will return 0 if pri-type = :bytes."
   [pri-type]
   (condp = pri-type
     :bool false
     :string ""
-    :bytes (bytes (byte-array 0))
     0)) ; all other pri-types are numeric
 
