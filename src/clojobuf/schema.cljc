@@ -75,40 +75,69 @@
     (= typ :double) 'double?
     (= typ :bool) 'boolean?))
 
+(defn- get-malli-type [typ]
+  (cond
+    (string? typ) [:ref (keyword typ)]
+    (#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64} typ) :int
+    (= typ :string) :string
+    (= typ :bytes) 'bytes? ; TODO is this correct?
+    (= typ :float) :double
+    (= typ :double) :double
+    (= typ :bool) :boolean))
+
 (defn- vxform-field [[_ rori typ name field-id options]]
-  [(keyword name) (get-checker typ)])
+  (condp = rori
+    :required [(keyword name) (get-checker typ)]
+    :repeated [(keyword name) {:optional true} [:vector (get-checker typ)]]
+    [(keyword name) {:optional true} (get-checker typ)]))
 
 (defn- vxform-map-field [[_ ktype vtype name field-id options]]
-  [(keyword name) [:map-of [(get-checker ktype) (get-checker vtype)]]])
+  [(keyword name) {:optional true} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
 
 (defn- vxform-oneof-field [[_ typ name field-id options]]
-  [(keyword name) (get-checker typ)])
+  [(keyword name) {:optional true} (get-checker typ)])
 
 (defn- vxform-oneof
   "[:oneof 'either'
        [:oneofField :string 'name' 1 nil]
        [:oneofField 'Msg' 'msg' 2 nil]]
    =>
-   [:either [:enum :name :msg], :name string?, :msg [:ref :Msg]}]]"
+   [ [[:either [:enum :name :msg]]
+      [:name string?]
+      [:msg [:ref :Msg]]]
+     [:fn '(fn [kvs] (if-let [oneof-target (kvs :either)]
+                     (contains? kvs oneof-target)
+                     true))] ]"
   [[_ name & forms]]
-  (reduce into
-          [(keyword name) (into [:enum] (map #(keyword (nth % 2))) forms)]
-          (map vxform-oneof-field forms)))
+  [(into
+    [[(keyword name) {:optional true} (into [:enum] (map #(keyword (nth % 2))) forms)]]
+    (map vxform-oneof-field forms))
+   [:fn (fn [kvs] (if-let [oneof-target (kvs (keyword name))]
+                    (contains? kvs oneof-target)
+                    true))]])
 
-(defn- vld-msg-child-reducer
-  "msg-child is child node within message; it can be :field, :mapField, :oneof or :option."
-  [prev msg-child]
-  (conj prev (condp = (first msg-child)
-               :field (vxform-field msg-child)
-               :mapField (vxform-map-field msg-child)
-               :oneof (vxform-oneof msg-child))))
+(defn- vld-msg-children-processor
+  "msg-children are child nodes within message; each can be :field, :mapField, :oneof or :option."
+  [msg-children]
+  (loop [idx 0, main [:map {:close true}], funcs []]
+    (if (< idx (count msg-children))
+      (let [msg-child (nth msg-children idx)]
+        (condp = (first msg-child)
+          :field    (recur (inc idx), (conj main (vxform-field msg-child)),     funcs)
+          :mapField (recur (inc idx), (conj main (vxform-map-field msg-child)), funcs)
+          :oneof (let [[m f] (vxform-oneof msg-child)]
+                   (recur (inc idx), (into main m) (conj funcs f)))
+          (recur (inc idx) main funcs)))
+      (if (empty? funcs)
+        main
+        (into [:and main] funcs)))))
 
 ; -------------------- msg main -----------------------------
 (defn- xform-msg [syntax package form]
   (let [fullname (qualify-name package (second form))
         ->bin (reduce fwd-msg-child-reducer {} (drop 2 form))
         <-bin (reduce bwd-msg-child-reducer {} (drop 2 form))
-        validator (reduce vld-msg-child-reducer [:map {:close true}] (drop 2 form))]
+        validator (vld-msg-children-processor (drop 2 form))]
     [{fullname {:syntax syntax :type :msg :encode ->bin :decode <-bin}}
      {fullname validator}]))
 
