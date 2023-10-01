@@ -3,7 +3,7 @@
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]))
 
-(def registry (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto"]))
+(def registry (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]))
 
 (defn codec [msg-id msg]
   (->> msg
@@ -165,5 +165,10 @@
 (deftest test-find-fault
   (is (= (find-fault registry :Msg1 {:a :b}) {:a ["disallowed key"]}))
   (is (= (find-fault registry :my.ns.nested/Msg1 {:a :b}) {:a ["disallowed key"]})))
+
+(deftest test-extension
+  (rt :my.ns.extension/Extendable {:int32_val 1, :int64_val 2})
+  (rt :my.ns.extension/Extendable {:my.ns.extension/Msg1.double_val 1.0})
+  (rt :my.ns.extension/Extendable {:my.ns.extension/string_val "abcd"}))
 
 (run-tests)

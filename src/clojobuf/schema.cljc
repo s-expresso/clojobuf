@@ -30,12 +30,14 @@
     (conj (with-meta oneof-select {:type :oneof}) oneof-fields)))
 
 (defn- fwd-msg-child-reducer
-  "msg-child is a child node within message; it can be :field, :mapField, :oneof or :option."
+  "msg-child is a child node within message; it can be :field, :mapField, :oneof or other types that we don't care."
   [prev msg-child]
   (conj prev (condp = (first msg-child)
-               :field (fxform-field msg-child)
+               :field  (fxform-field msg-child)
+               :field+ (fxform-field msg-child)
                :mapField (fxform-map-field msg-child)
-               :oneof (fxform-oneof msg-child))))
+               :oneof (fxform-oneof msg-child)
+               nil)))
 
 ; -------------------- msg backward -----------------------------
 (defn- bxform-field [[_ rori typ name field-id options]]
@@ -58,12 +60,14 @@
   (reduce conj (map #(bxform-oneof-field (keyword name) %) forms)))
 
 (defn- bwd-msg-child-reducer
-  "msg-child a child node within message; it can be :field, :mapField, :oneof or :option."
+  "msg-child a child node within message; it can be :field, :mapField, :oneof or other types that we don't care."
   [prev msg-child]
   (conj prev (condp = (first msg-child)
                :field (bxform-field msg-child)
+               :field+ (bxform-field msg-child)
                :mapField (bxform-map-field msg-child)
-               :oneof (bxform-oneof msg-child))))
+               :oneof (bxform-oneof msg-child)
+               nil)))
 
 ; -------------------- msg validator -----------------------------
 (def vschemas-pb-types {:int32     [:int {:min sint32-min, :max sint32-max}]
@@ -129,6 +133,7 @@
       (let [msg-child (nth msg-children idx)]
         (condp = (first msg-child)
           :field    (recur (inc idx), (conj main (vxform-field msg-child)),     funcs)
+          :field+   (recur (inc idx), (conj main (vxform-field msg-child)),     funcs)
           :mapField (recur (inc idx), (conj main (vxform-map-field msg-child)), funcs)
           :oneof (let [[m f] (vxform-oneof msg-child)]
                    (recur (inc idx), (into main m) (conj funcs f)))
@@ -154,7 +159,7 @@
                       prev))
 
 (defn- xform-enm [syntax package enm]
-  (let [fullname  (qualify-name package (second enm))
+  (let [fullname (qualify-name package (second enm))
         tuples (reduce enum-child-reducer [] (drop 2 enm))
         default (-> tuples first first) ; for enum, the first entry is the default value
         ->bin (into {} tuples)
