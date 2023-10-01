@@ -1,4 +1,4 @@
-(ns clojobuf.test-core
+(ns clojobuf.core-test
   (:require [clojobuf.core :refer [encode decode protoc find-fault]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]))
@@ -12,8 +12,12 @@
 
 (m/validate [:ref :my.ns.map/Mappy] {:a :b} (second registry))
 
-(defmacro rt [msg-id msg]
-  `(is (= (codec ~msg-id ~msg) ~msg)))
+#?(:clj (defmacro rt [msg-id msg]
+          `(is (= (codec ~msg-id ~msg) ~msg))))
+
+; TODO figure out how to use macro for cljs so that error line number tallies with source
+#?(:cljs (defn rt [msg-id msg]
+           (is (= (codec msg-id msg) msg))))
 
 (deftest test-codec-mappy
   (rt :my.ns.map/Mappy {:uint32_sint64 {0 0, 1 1, 2 -2, 3 3, 4 -4}})
@@ -170,5 +174,3 @@
   (rt :my.ns.extension/Extendable {:int32_val 1, :int64_val 2})
   (rt :my.ns.extension/Extendable {:my.ns.extension/Msg1.double_val 1.0})
   (rt :my.ns.extension/Extendable {:my.ns.extension/string_val "abcd"}))
-
-(run-tests)
