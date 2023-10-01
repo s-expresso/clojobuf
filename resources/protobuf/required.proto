@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package my.ns.required;
+
+message Required {
+    required int32 int32_val       = 1;
+    required string string_val     = 2;
+}

@@ -5,6 +5,7 @@ import "map.proto";
 import "oneof.proto";
 import "packed.proto";
 import "repeat.proto";
+import "required.proto";
 import "singular.proto";
 
 package my.ns.nested;
