@@ -1,11 +1,5 @@
 (ns clojobuf.test-codec
-  (:require [clojobuf.encode :refer [encode]]
-            [clojobuf.decode :refer [decode]]
-            [clojobuf.schema :refer [gen-registries]]
-            [clojobuf-codec.encode :refer [write-pri]]
-            [clojobuf-codec.decode :refer [read-pri read-tag]]
-            [clojobuf-codec.io.reader :refer [make-reader]]
-            [clojobuf-codec.io.writer :refer [make-writer ->bytes]]
+  (:require [clojobuf.core :refer [encode decode gen-registries]]
             [clojure.test :refer [is deftest run-tests]]))
 
 (def codec_malli (gen-registries ["resources/protobuf/"] ["nested.proto"]))
@@ -142,5 +136,22 @@
                             :fixed32_val  [1 2 3]
                             :sfixed32_val [-1 0 1]
                             :float_val  [-1.0 0.0 1.0]}))
+
+(deftest test-codec-nested
+  (rt :my.ns.nested/Msg1 {:enum :ZERO
+                          :nested2
+                          {:nested3
+                           {:nested4
+                            {:nested5
+                             {:either {:either :int32_val, :int32_val 1}}}}}
+                          :nested3
+                          {:nested4
+                           {:nested5
+                            {:either {:either :int32_val, :int32_val 1}}}}
+                          :nested4
+                          {:nested5
+                           {:either {:either :int32_val, :int32_val 1}}}
+                          :nested5
+                          {:either {:either :int32_val, :int32_val 1}}}))
 
 (run-tests)

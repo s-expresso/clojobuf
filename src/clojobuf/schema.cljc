@@ -140,13 +140,3 @@
             :message (recur (inc idx) syntax                package     (conj reg (xform-msg syntax package form)))
             :enum    (recur (inc idx) syntax                package     (conj reg (xform-enm syntax package form)))
             (recur          (inc idx) syntax                package     reg))))))
-
-(defn gen-registries
-  "Generate codec and malli registries and return them as a tuple."
-  [paths files]
-  (let [rast (unnest (protoc paths files))
-        ; TODO below is super inefficient, use transducer or other ways
-        codec_malli_pairs (reduce into [] (map xform-ast (map val rast)))
-        codec (into {} (map first) codec_malli_pairs)
-        malli (into {} (map second) codec_malli_pairs)]
-    [codec malli]))

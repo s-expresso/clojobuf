@@ -126,13 +126,3 @@
               merged (if (oneof? field-schema) (conj merged {(oneof-label field-schema) (fname field-schema)}) merged)]
           (recur merged)) ; TODO need a better conj to handle repeated + inject oneof-selector
         msg))))
-
-(defn decode
-  "Decode a protobuf binary and return its message
-   codec-registry: registry of codec from clojobuf.schema.gen-registries
-   msg-id:         message id with ns scope, e.g. :my.ns.scope/MsgA.MsgB
-   bin:            binary to be decoded"
-  [codec-registry msg-id bin]
-  (decode-msg codec-registry
-              (codec-registry msg-id)
-              bin))

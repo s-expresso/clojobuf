@@ -1,5 +1,5 @@
 (ns clojobuf.test-schema-codec
-  (:require [clojobuf.schema :refer [gen-registries]]
+  (:require [clojobuf.core :refer [gen-registries]]
             [clojure.test :refer [is deftest run-tests]]))
 
 (def codec_malli (gen-registries ["resources/protobuf/"] ["nested.proto"]))
