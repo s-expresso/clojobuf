@@ -1,6 +1,4 @@
-(ns clojobuf.schema
-  (:require [rubberbuf.core :refer [protoc]]
-            [rubberbuf.ast-postprocess :refer [unnest]]))
+(ns clojobuf.schema)
 
 (defn- qualify-name [package name]
   (keyword (if (empty? package) name (str package "/" name))))
