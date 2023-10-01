@@ -1,14 +1,20 @@
 (ns clojobuf.test-codec
-  (:require [clojobuf.core :refer [encode decode gen-registries]]
-            [clojure.test :refer [is deftest run-tests]]))
+  (:require [clojobuf.core :refer [encode decode protoc find-fault]]
+            [clojure.test :refer [is deftest run-tests]]
+            [malli.core :as m]
+            [malli.error :as me]
+            [malli.registry :as mr]))
 
-(def codec_malli (gen-registries ["resources/protobuf/"] ["nested.proto"]))
-(def codec-schema (first codec_malli))
+(def registry (protoc ["resources/protobuf/"] ["nested.proto"]))
 
 (defn codec [msg-id msg]
   (->> msg
-       (encode codec-schema msg-id)
-       (decode codec-schema msg-id)))
+       (encode registry msg-id)
+       (decode registry msg-id)))
+
+(find-fault registry :my.ns.map/Mappy {:a :b})
+
+(m/validate [:ref :my.ns.map/Mappy] {:a :b} (second registry))
 
 (defmacro rt [msg-id msg]
   `(is (= (codec ~msg-id ~msg) ~msg)))

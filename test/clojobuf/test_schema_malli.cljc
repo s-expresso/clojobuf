@@ -1,10 +1,11 @@
 (ns clojobuf.test-schema-malli
-  (:require [clojobuf.core :refer [gen-registries]]
+  (:require [clojobuf.core :refer [protoc]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]
             [malli.registry :as mr]))
 
-(def codec_malli (gen-registries ["resources/protobuf/"] ["nested.proto"]))
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto"]
+                         :malli-composite-registry false))
 (def malli-schema (second codec_malli))
 (def registry {:registry (mr/composite-registry
                           m/default-registry
@@ -23,7 +24,7 @@
 (deftest test-schema-malli-map
   (is (= (malli-schema :my.ns.map/Mappy)
          [:map
-          {:close true}
+          {:closed true}
           [:uint32_sint64 {:optional true} [:map-of :int :int]]
           [:int64_string {:optional true} [:map-of :int :string]]
           [:fixed32_double {:optional true} [:map-of :int :double]]
@@ -32,12 +33,13 @@
           [:uint64_packed {:optional true} [:map-of :int [:ref :my.ns.packed/Packed]]]]))
   (is (true?  (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {0 0, 1 -1, 2 2, 3 -3}} registry)))
   (is (false? (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {1 1.234}} registry)))
-  (is (false? (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {1.234 0}} registry))))
+  (is (false? (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {1.234 0}} registry)))
+  (is (false? (m/validate [:ref :my.ns.map/Mappy] {:a :b} registry))))
 
 (deftest test-schema-malli-nested
   (is (= (malli-schema :my.ns.nested/Msg1)
          [:map
-          {:close true}
+          {:closed true}
           [:enum {:optional true} [:ref :my.ns.enum/Enum]]
           [:nested2 {:optional true} [:ref :my.ns.nested/Msg1.Msg2]]
           [:nested3 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
@@ -45,32 +47,32 @@
           [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2)
          [:map
-          {:close true}
+          {:closed true}
           [:singular {:optional true} [:ref :my.ns.singular/Singular]]
           [:nested3 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
           [:nested4 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
           [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2.Msg3)
          [:map
-          {:close true}
+          {:closed true}
           [:packed {:optional true} [:ref :my.ns.packed/Packed]]
           [:repeat {:optional true} [:ref :my.ns.repeat/Repeat]]
           [:nested4 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
           [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2.Msg3.Msg4)
          [:map
-          {:close true}
+          {:closed true}
           [:mappy {:optional true} [:ref :my.ns.map/Mappy]]
           [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5)
-         [:map {:close true} [:either {:optional true} [:ref :my.ns.oneof/Either]]])))
+         [:map {:closed true} [:either {:optional true} [:ref :my.ns.oneof/Either]]])))
 
 ; TODO compare dynamic function at end of form (currently bypassed with drop-last)
 (deftest test-schema-malli-oneof
   (is (= (drop-last (malli-schema :my.ns.oneof/Either))
          [:and
           [:map
-           {:close true}
+           {:closed true}
            [:either
             {:optional true}
             [:enum
@@ -115,12 +117,13 @@
   (is (true?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val, :string_val "abc"} registry)))
   (is (true?  (m/validate [:ref :my.ns.oneof/Either] {:string_val "abc"} registry)))
   (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val} registry)))
-  (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val, :uint32_val 1} registry))))
+  (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val, :uint32_val 1} registry)))
+  (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:a :b} registry))))
 
 (deftest test-schema-malli-packed
   (is (= (malli-schema :my.ns.packed/Packed)
          [:map
-          {:close true}
+          {:closed true}
           [:int32_val {:optional true} [:vector 'int?]]
           [:int64_val {:optional true} [:vector 'int?]]
           [:uint32_val {:optional true} [:vector 'int?]]
@@ -138,12 +141,13 @@
           [:sfixed32_val {:optional true} [:vector 'int?]]
           [:float_val {:optional true} [:vector 'float?]]
           [:singular_msg {:optional true} [:vector [:ref :my.ns.singular/Singular]]]]))
-  (is (true?  (m/validate [:ref :my.ns.packed/Packed] {:int32_val [0 1 2 3]} registry))))
+  (is (true?  (m/validate [:ref :my.ns.packed/Packed] {:int32_val [0 1 2 3]} registry)))
+  (is (false? (m/validate [:ref :my.ns.packed/Packed] {:a :b} registry))))
 
 (deftest test-schema-malli-repeat
   (is (= (malli-schema :my.ns.repeat/Repeat)
          [:map
-          {:close true}
+          {:closed true}
           [:int32_val {:optional true} [:vector 'int?]]
           [:int64_val {:optional true} [:vector 'int?]]
           [:uint32_val {:optional true} [:vector 'int?]]
@@ -162,12 +166,13 @@
           [:float_val {:optional true} [:vector 'float?]]
           [:singular_msg {:optional true} [:vector [:ref :my.ns.singular/Singular]]]]))
   (is (true?  (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0 1 2 3]} registry)))
-  (is (false?  (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0.0]} registry))))
+  (is (false? (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0.0]} registry)))
+  (is (false? (m/validate [:ref :my.ns.repeat/Repeat] {:a :b} registry))))
 
 (deftest test-schema-malli-singular
   (is (= (malli-schema :my.ns.singular/Singular)
          [:map
-          {:close true}
+          {:closed true}
           [:int32_val {:optional true} 'int?]
           [:int64_val {:optional true} 'int?]
           [:uint32_val {:optional true} 'int?]
@@ -185,6 +190,7 @@
           [:sfixed32_val {:optional true} 'int?]
           [:float_val {:optional true} 'float?]]))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0} registry)))
-  (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0.0} registry))))
+  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0.0} registry)))
+  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:a :b} registry))))
 
 (run-tests)
