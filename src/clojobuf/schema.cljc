@@ -1,5 +1,6 @@
 (ns clojobuf.schema
   (:require [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
+            [clojobuf.util :refer [dot-qualify]]
             [clojure.set :refer [map-invert]]))
 
 (defn- qualify-name [package name]
@@ -83,7 +84,7 @@
 
 (defn- get-malli-type [typ]
   (cond
-    (string? typ) [:ref (keyword typ)]
+    (string? typ) [:ref (dot-qualify (keyword typ))]
     (= typ :float) :double ; TODO is this correct?
     (= typ :bool) :boolean
     #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double :bytes} typ)
@@ -143,7 +144,7 @@
         <-bin (reduce bwd-msg-child-reducer {} (drop 2 form))
         validator (vld-msg-children-processor (drop 2 form))]
     [{fullname {:syntax syntax :type :msg :encode ->bin :decode <-bin}}
-     {fullname validator}]))
+     {(dot-qualify fullname) validator}]))
 
 ; ---------------------- enum -------------------------------
 (defn- enum-child-reducer
@@ -153,14 +154,14 @@
                       prev))
 
 (defn- xform-enm [syntax package enm]
-  (let [fullname (qualify-name package (second enm))
+  (let [fullname  (qualify-name package (second enm))
         tuples (reduce enum-child-reducer [] (drop 2 enm))
         default (-> tuples first first) ; for enum, the first entry is the default value
         ->bin (into {} tuples)
         <-bin (map-invert ->bin)
         validator (into [:enum] (keys ->bin))]
     [{fullname {:syntax syntax, :type :enum, :default default :encode ->bin, :decode <-bin}}
-     {fullname validator}]))
+     {(dot-qualify fullname) validator}]))
 
 ; ----------------------- ast -------------------------------
 (defn xform-ast

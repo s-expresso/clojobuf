@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+message Msg1 {
+    optional int32 int32_val = 1;
+}
+
+message MsgA {
+    optional int32 int32_val = 1;
+    message MsgB {
+        optional int64 int64_val = 1;
+        message MsgC {
+            optional uint32 uint32_val = 1;
+        }
+    }
+}

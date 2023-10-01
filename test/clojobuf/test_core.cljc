@@ -1,9 +1,9 @@
-(ns clojobuf.test-codec
+(ns clojobuf.test-core
   (:require [clojobuf.core :refer [encode decode protoc find-fault]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]))
 
-(def registry (protoc ["resources/protobuf/"] ["nested.proto"]))
+(def registry (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto"]))
 
 (defn codec [msg-id msg]
   (->> msg
@@ -155,5 +155,15 @@
                            {:either {:either :int32_val, :int32_val 1}}}
                           :nested5
                           {:either {:either :int32_val, :int32_val 1}}}))
+
+(deftest test-codec-no-package
+  (rt :Msg1 {:int32_val 100})
+  (rt :MsgA {:int32_val 100})
+  (rt :MsgA.MsgB {:int64_val 100})
+  (rt :MsgA.MsgB.MsgC {:uint32_val 100}))
+
+(deftest test-find-fault
+  (is (= (find-fault registry :Msg1 {:a :b}) {:a ["disallowed key"]}))
+  (is (= (find-fault registry :my.ns.nested/Msg1 {:a :b}) {:a ["disallowed key"]})))
 
 (run-tests)

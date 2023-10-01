@@ -2,6 +2,7 @@
   (:require [clojobuf.encode :refer [encode-msg]]
             [clojobuf.decode :refer [decode-msg]]
             [clojobuf.schema :refer [xform-ast]]
+            [clojobuf.util :refer [dot-qualify]]
             [malli.core :as m]
             [malli.error :as me]
             [malli.registry :as mr]
@@ -14,7 +15,7 @@
    msg-id:   message id with ns scope, e.g. :my.ns.scope/MsgA.MsgB
    msg:      message to be encoded"
   [registry msg-id msg]
-  (when (m/validate [:ref msg-id] msg (second registry))
+  (when (m/validate [:ref (dot-qualify msg-id)] msg (second registry))
     (encode-msg (first registry)
                 ((first registry) msg-id)
                 msg)))
@@ -32,7 +33,7 @@
 (defn find-fault
   "Check msg against schema of msg-id in registry. Return a map of fault(s) found, or nil if no fault."
   [registry msg-id msg]
-  (-> (m/explain msg-id msg (second registry))
+  (-> (m/explain (dot-qualify msg-id) msg (second registry))
       (me/humanize)))
 
 (defn protoc

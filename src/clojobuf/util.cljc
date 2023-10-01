@@ -41,3 +41,9 @@
 (defn raise [err-txt]
   #?(:clj (throw (Exception. err-txt)))
   #?(:cljs (throw (js/Error err-txt))))
+
+(defn dot-qualify
+  "Malli schema requires fully qualified keyword as ref, hence for a protobuf message Msg1 without package
+   we use :./Msg1 *internally* to make it fully qualified."
+  [kw]
+  (if (qualified-keyword? kw) kw (->> kw name (str "./") keyword)))
