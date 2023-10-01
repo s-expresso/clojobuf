@@ -1,7 +1,6 @@
 (ns clojobuf.test-schema-malli
   (:require [clojobuf.core :refer [protoc]]
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
-            [clojure.core :refer [bigint]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]
             [malli.registry :as mr]))
@@ -108,7 +107,7 @@
            [:sfixed64_val {:optional true} :sfixed64]
            [:double_val {:optional true} :double]
            [:string_val {:optional true} :string]
-           [:bytes_val {:optional true} 'bytes?] ; TODO
+           [:bytes_val {:optional true} :bytes]
            [:fixed32_val {:optional true} :fixed32]
            [:sfixed32_val {:optional true} :sfixed32]
            [:float_val {:optional true} :double]
@@ -138,7 +137,7 @@
           [:sfixed64_val {:optional true} [:vector :sfixed64]]
           [:double_val {:optional true} [:vector :double]]
           [:string_val {:optional true} [:vector :string]]
-          [:bytes_val {:optional true} [:vector 'bytes?]] ; TODO
+          [:bytes_val {:optional true} [:vector :bytes]]
           [:fixed32_val {:optional true} [:vector :fixed32]]
           [:sfixed32_val {:optional true} [:vector :sfixed32]]
           [:float_val {:optional true} [:vector :double]] ; TODO
@@ -162,13 +161,15 @@
           [:sfixed64_val {:optional true} [:vector :sfixed64]]
           [:double_val {:optional true} [:vector :double]]
           [:string_val {:optional true} [:vector :string]]
-          [:bytes_val {:optional true} [:vector 'bytes?]] ; TODO
+          [:bytes_val {:optional true} [:vector :bytes]]
           [:fixed32_val {:optional true} [:vector :fixed32]]
           [:sfixed32_val {:optional true} [:vector :sfixed32]]
           [:float_val {:optional true} [:vector :double]] ; TODO
           [:singular_msg {:optional true} [:vector [:ref :my.ns.singular/Singular]]]]))
   (is (true?  (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0 1 2 3]} registry)))
-  (is (false? (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0.0]} registry)))
+  (is (false? (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0.01]} registry)))
+  #?(:clj  (is (false? (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0.0]} registry)))) ; for clj, 0.0 stays as double
+  #?(:cljs (is (true?  (m/validate [:ref :my.ns.repeat/Repeat] {:int32_val [0.0]} registry)))) ; for cljs, 0.0 becomes int 0
   (is (false? (m/validate [:ref :my.ns.repeat/Repeat] {:a :b} registry))))
 
 (deftest test-schema-malli-required
@@ -197,7 +198,7 @@
           [:sfixed64_val {:optional true} :sfixed64]
           [:double_val {:optional true} :double]
           [:string_val {:optional true} :string]
-          [:bytes_val {:optional true} 'bytes?] ; TODO
+          [:bytes_val {:optional true} :bytes]
           [:fixed32_val {:optional true} :fixed32]
           [:sfixed32_val {:optional true} :sfixed32]
           [:float_val {:optional true} :double]])) ; TODO
@@ -212,12 +213,14 @@
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:fixed64_val 0} registry)))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val 0} registry)))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:double_val 0.0} registry)))
-  (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:bytes_val (byte-array 1)} registry)))
+  #?(:clj  (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:bytes_val (byte-array 1)} registry))))
+  #?(:cljs (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:bytes_val (js/Uint8Array. [1 2 3])} registry))))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:fixed32_val 0} registry)))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:sfixed32_val 0} registry)))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:float_val 0.0} registry)))
 
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0.0} registry)))
+  #?(:clj  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0.0} registry)))) ; for clj, 0.0 stays as double
+  #?(:cljs (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0.0} registry)))) ; for cljs, 0.0 becomes int 0
   (is (false? (m/validate [:ref :my.ns.singular/Singular] {:a :b} registry))))
 
 (deftest test-schema-malli-singular-boundary
@@ -255,31 +258,37 @@
   (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int32_val (+ sint32-max 1)} registry)))
   (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int32_val (- sint32-min 1)} registry)))
 
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int64_val (+ sint64-max 1N)} registry))) ; bigint
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int64_val (- sint64-min 1N)} registry))) ; bigint
-
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:uint32_val (- uint32-min 1)} registry)))
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:uint32_val (+ uint32-max 1)} registry)))
 
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:uint64_val (- uint64-min 1)} registry)))
-  (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:uint64_val (+ uint64-max 1)} registry)))
+  ; (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:uint64_val (+ uint64-max 1)} registry)))
 
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:sint32_val (+ sint32-max 1)} registry)))
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:sint32_val (- sint32-min 1)} registry)))
 
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sint64_val (+ sint64-max 1N)} registry))) ; bigint
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sint64_val (- sint64-min 1N)} registry))) ; bigint
-
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:fixed64_val (- uint64-min 1)} registry)))
-  (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:fixed64_val (+ uint64-max 1)} registry)))
-
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val (+ sint64-max 1N)} registry))) ; bigint
-  (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val (- sint64-min 1N)} registry))) ; bigint
+  ; (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:fixed64_val (+ uint64-max 1)} registry)))
 
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:fixed32_val (- uint32-min 1)} registry)))
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:fixed32_val (+ uint32-max 1)} registry)))
 
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:sfixed32_val (+ sint32-max 1)} registry)))
   (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:sfixed32_val (- sint32-min 1)} registry))))
+
+#?(:clj
+   (deftest test-schema-malli-singular-bigint-out-of-range
+     (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:uint64_val (+ uint64-max 1)} registry)))
+
+     (is (false?  (m/validate [:ref :my.ns.singular/Singular] {:fixed64_val (+ uint64-max 1)} registry)))
+
+     (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int64_val (+ sint64-max 1N)} registry)))
+     (is (false? (m/validate [:ref :my.ns.singular/Singular] {:int64_val (- sint64-min 1N)} registry)))
+
+     (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sint64_val (+ sint64-max 1N)} registry)))
+     (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sint64_val (- sint64-min 1N)} registry)))
+
+     (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val (+ sint64-max 1N)} registry)))
+     (is (false? (m/validate [:ref :my.ns.singular/Singular] {:sfixed64_val (- sint64-min 1N)} registry)))))
 
 (run-tests)
