@@ -47,13 +47,19 @@
            :nested2 [2 "my.ns.nested/Msg1.Msg2" nil nil],
            :nested3 [3 "my.ns.nested/Msg1.Msg2.Msg3" nil nil],
            :nested4 [4 "my.ns.nested/Msg1.Msg2.Msg3.Msg4" nil nil],
-           :nested5 [5 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]},
+           :nested5 [5 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]
+           :nested5a [6 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]
+           :nested5b [7 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]
+           :nested5c [8 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]},
           :decode
           {1 [:enum "my.ns.enum/Enum" nil nil],
            2 [:nested2 "my.ns.nested/Msg1.Msg2" nil nil],
            3 [:nested3 "my.ns.nested/Msg1.Msg2.Msg3" nil nil],
            4 [:nested4 "my.ns.nested/Msg1.Msg2.Msg3.Msg4" nil nil],
-           5 [:nested5 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]}}))
+           5 [:nested5 "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]
+           6 [:nested5a "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]
+           7 [:nested5b "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]
+           8 [:nested5c "my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5" nil nil]}}))
   (is (= (codec-schema :my.ns.nested/Msg1.Msg2)
          {:syntax :proto3,
           :type :msg,

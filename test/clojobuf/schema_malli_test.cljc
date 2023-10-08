@@ -45,7 +45,10 @@
           [:nested2 {:optional true} [:ref :my.ns.nested/Msg1.Msg2]]
           [:nested3 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
           [:nested4 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
-          [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
+          [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]
+          [:nested5a {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]
+          [:nested5b {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]
+          [:nested5c {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2)
          [:map
           {:closed true}

@@ -35,4 +35,8 @@ message Msg1 {
     Msg2.Msg3 nested3 = 3;
     Msg2.Msg3.Msg4 nested4 = 4;
     Msg2.Msg3.Msg4.Msg5 nested5 = 5;
+
+    Msg1.Msg2.Msg3.Msg4.Msg5 nested5a = 6;
+    my.ns.nested.Msg1.Msg2.Msg3.Msg4.Msg5 nested5b = 7;
+    .my.ns.nested.Msg1.Msg2.Msg3.Msg4.Msg5 nested5c = 8;
 }
