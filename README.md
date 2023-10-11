@@ -42,7 +42,7 @@ message Msg2 {
 }
 ```
 
-Code will be like
+Code will be like [src/clojobuf/example/ex1.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex1.cljc)
 ```clojure
 (ns clojobuf.example.ex1
   (:require [clojobuf.core :refer [encode decode find-fault protoc]]))
@@ -82,7 +82,7 @@ Code will be like
 i.e. these 4 functions are all you need: `protoc`, `encode`, `decode` and `find-fault`
 
 ## protoc
-`protoc` function generates 2 schemas which are plain maps; 1 for encoding/decoding and 1 for validation.
+`protoc` function generates 2 schemas: 1 for encoding/decoding and 1 for validation.
 
 Sample encoding/decoding schema
 ```clojure
@@ -122,7 +122,7 @@ Sample encoding/decoding schema
 ```
 
 Sample validation schema
-* note you have to invoke `protoc` with optional named arg `:malli-composite-registry false` to get a plain schema as map like below
+* note you have to invoke `protoc` with optional named arg `:auto-malli-registry false` to get a schema as plain map like below
 * and yes this is [malli schema](https://github.com/metosin/malli) :)
 ```clojure
 {:my.ns.enum/Enum [:enum :MINUS_ONE :ZERO :ONE :TWO :THREE :FOUR :FIVE],
@@ -154,6 +154,9 @@ Sample validation schema
   [:sfixed32_val {:optional true} int?]
   [:float_val {:optional true} float?]]}
 ```
+
+You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for an example.
+
 
 ## Unknown Fields
 During decode, unknown fields are placed into `:?` as a vector of 3 values (field number, wire type, wire value).

@@ -1,8 +1,28 @@
-(ns clojobuf.example.ex1
-  (:require [clojobuf.core :refer [encode decode find-fault protoc]]))
+(ns clojobuf.example.ex2
+  (:require [clojobuf.core :refer [encode decode find-fault protoc ->malli-registry]]))
 
-; first use protoc to compile a registry
-(def registry (protoc ["resources/protobuf/"] ["example.proto"]))
+; use protoc with :auto-malli-registry false
+(def schemas (protoc ["resources/protobuf/"] ["example.proto"] :auto-malli-registry false))
+
+#?(:clj (clojure.pprint/pprint schemas)
+   :cljs (cljs.pprint/pprint schemas))
+;; => [#:my.pb.ns{:Enum
+;;                {:syntax :proto2,
+;;                :type :enum,
+;;                :default :MINUS_ONE,
+;;                :encode {:MINUS_ONE -1, :ZERO 0, :ONE 1},
+;;                :decode {-1 :MINUS_ONE, 0 :ZERO, 1 :ONE}},
+;;                ...}
+;;     #:my.pb.ns{:Enum [:enum :MINUS_ONE :ZERO :ONE],
+;;                ...}]
+
+; equivalent to (def registry (protoc ["resources/protobuf/"] ["example.proto"]))
+(def registry [(first schemas)
+               (->malli-registry (second schemas))])
+
+;-------------------------------------------------------------------
+; Code below are identical to ex1.cljc
+;-------------------------------------------------------------------
 
 ; message to be encoded
 (def msg {:int32_val -1,

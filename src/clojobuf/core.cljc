@@ -1,7 +1,7 @@
 (ns clojobuf.core
   (:require [clojobuf.encode :refer [encode-msg]]
             [clojobuf.decode :refer [decode-msg]]
-            [clojobuf.schema :refer [xform-ast]]
+            [clojobuf.schema :refer [xform-ast vschemas-pb-types]]
             [clojobuf.util :refer [dot-qualify]]
             [malli.core :as m]
             [malli.error :as me]
@@ -38,16 +38,23 @@
   (-> (m/explain (dot-qualify msg-id) msg (second registry))
       (me/humanize)))
 
+(defn ->malli-registry
+  "Use `input`, which is expected to be (second (protoc ... :malli-composite-registry false)), to build
+   a malli registry and returns it."
+  [input]
+  {:registry (mr/composite-registry
+              m/default-registry
+              (into vschemas-pb-types input))})
+
 (defn protoc
   "Generate codec and malli registries and return them as a tuple."
-  [paths files & {:keys [malli-composite-registry] :or {malli-composite-registry true}}]
+  [paths files & {:keys [auto-malli-registry] :or {auto-malli-registry true}}]
   (let [rast (unnest (rc/protoc paths files))
         ; TODO below is super inefficient, use transducer or other ways
         codec_malli_pairs (reduce into [] (map xform-ast (map val rast)))
         codec (into {} (map first) codec_malli_pairs)
         malli (into {} (map second) codec_malli_pairs)
-        malli (if malli-composite-registry {:registry (mr/composite-registry
-                                                       m/default-registry
-                                                       malli)}
-                  malli)]
+        malli (if auto-malli-registry
+                (->malli-registry malli)
+                malli)]
     [codec malli]))

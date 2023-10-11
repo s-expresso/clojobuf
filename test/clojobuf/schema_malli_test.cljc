@@ -1,16 +1,13 @@
 (ns clojobuf.schema-malli-test
-  (:require [clojobuf.core :refer [protoc]]
+  (:require [clojobuf.core :refer [protoc ->malli-registry]]
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojure.test :refer [is deftest run-tests]]
-            [malli.core :as m]
-            [malli.registry :as mr]))
+            [malli.core :as m]))
 
 (def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]
-                         :malli-composite-registry false))
+                         :auto-malli-registry false))
 (def malli-schema (second codec_malli))
-(def registry {:registry (mr/composite-registry
-                          m/default-registry
-                          malli-schema)})
+(def registry (->malli-registry malli-schema))
 
 (deftest test-schema-malli-enum
   (is (= (malli-schema :my.ns.enum/Enum)

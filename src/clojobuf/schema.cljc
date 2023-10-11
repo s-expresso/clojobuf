@@ -181,7 +181,7 @@
      * (first vec2)  is n single entry of codec schema
      * (second vec2) is a single entry of malli schema"
   [ast]
-  (loop [idx 0, syntax 3, package "", reg [[nil vschemas-pb-types]]] ; inject vschemas-pb-types
+  (loop [idx 0, syntax 3, package "", reg []]
     (if (>= idx (count ast)) reg ; terminate loop and return reg
         (let [form (nth ast idx)]
           (condp = (first form)
