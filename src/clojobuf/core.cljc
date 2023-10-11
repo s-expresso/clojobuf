@@ -7,7 +7,9 @@
             [malli.error :as me]
             [malli.registry :as mr]
             [rubberbuf.core :as rc]
-            [rubberbuf.ast-postprocess :refer [unnest]]))
+            [rubberbuf.ast-postprocess :refer [unnest]]
+            #?(:cljs [sci.core]) ; manual require needed for cljs to serialize/deserialize function
+            ))
 
 (defn encode
   "Encode a message and return its protobuf binary, or return nil if msg is ill-formed.

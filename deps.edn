@@ -1,8 +1,9 @@
 {:paths ["src", "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        org.clojure/clojurescript {:mvn/version "1.11.60"}
-        com.google.javascript/closure-compiler-unshaded {:mvn/version "v20230103"}
+ :deps {com.google.javascript/closure-compiler-unshaded {:mvn/version "v20230103"}
         metosin/malli {:mvn/version "0.12.0"}
+        org.babashka/sci {:mvn/version "0.8.40"}
+        org.clojure/clojure {:mvn/version "1.11.1"}
+        org.clojure/clojurescript {:mvn/version "1.11.60"}
         s-expresso/rubberbuf {:git/url "https://github.com/s-expresso/rubberbuf.git"
                               :git/sha "d67b80e157214c7dc6bfef294ad78bdc4184ae23"
                               :git/tag "v0.1.8"}

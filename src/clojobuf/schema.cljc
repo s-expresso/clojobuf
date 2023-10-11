@@ -78,13 +78,16 @@
                         :int64     [:int {:min sint64-min, :max sint64-max}]
                         :sint64    [:int {:min sint64-min, :max sint64-max}]
                         :sfixed64  [:int {:min sint64-min, :max sint64-max}]
-                        :uint64    [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
-                                                                          (>= v 0)
-                                                                          (<= v uint64-max)))]]
-                        :fixed64   [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
-                                                                          (>= v 0)
-                                                                          (<= v uint64-max)))]]
-                        :bytes     #?(:clj 'bytes? :cljs [:fn (fn [v] (= js/Uint8Array (type v)))])})
+                        :uint64    #?(:clj [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
+                                                                                  (>= v 0)
+                                                                                  (<= v uint64-max)))]]
+                                      :cljs [:int {:min uint64-min, :max uint64-max}])
+                        :fixed64   #?(:clj [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
+                                                                                  (>= v 0)
+                                                                                  (<= v uint64-max)))]]
+                                      :cljs [:int {:min uint64-min, :max uint64-max}])
+                        :bytes     #?(:clj 'bytes?
+                                      :cljs [:fn (fn [v] (= js/Uint8Array (type v)))])})
 
 (defn- get-malli-type [typ]
   (cond
@@ -121,9 +124,9 @@
   [(into
     [[(keyword name) {:optional true} (into [:enum] (map #(keyword (nth % 2))) forms)]]
     (map vxform-oneof-field forms))
-   [:fn (fn [kvs] (if-let [oneof-target (kvs (keyword name))]
-                    (contains? kvs oneof-target)
-                    true))]])
+   [:fn `(fn [kvs] (if-let [oneof-target (kvs ~(keyword name))]
+                     (contains? kvs oneof-target)
+                     true))]])
 
 (defn- vld-msg-children-processor
   "msg-children are child nodes within message; each can be :field, :mapField, :oneof or :option."
