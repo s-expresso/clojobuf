@@ -122,10 +122,13 @@
            :double_val [11 :double :oneof nil],
            :int32_val [1 :int32 :oneof nil],
            :sfixed32_val [15 :sfixed32 :oneof nil],
+           :msg_1 [19 "Msg1" :oneof nil],
+           :msg_a [20 "MsgA" :oneof nil],
            :either
            [:oneof
             :string_val
             :fixed32_val
+            :msg_1
             :sint32_val
             :sfixed64_val
             :singular_msg
@@ -141,6 +144,7 @@
             :enum_val
             :double_val
             :int32_val
+            :msg_a
             :sfixed32_val]}
           :decode
           {7 [:bool_val :bool [:oneof :either] nil],
@@ -160,7 +164,9 @@
            16 [:float_val :float [:oneof :either] nil],
            10 [:sfixed64_val :sfixed64 [:oneof :either] nil],
            18 [:packed_msg "my.ns.packed/Packed" [:oneof :either] nil],
-           8 [:enum_val "my.ns.enum/Enum" [:oneof :either] nil]}})))
+           8 [:enum_val "my.ns.enum/Enum" [:oneof :either] nil],
+           19 [:msg_1 "Msg1" [:oneof :either] nil],
+           20 [:msg_a "MsgA" [:oneof :either] nil]}})))
 
 (deftest test-schema-codec-packed
   (is (= (codec-schema :my.ns.packed/Packed)
