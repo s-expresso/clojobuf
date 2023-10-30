@@ -8,8 +8,8 @@ Add the following to deps.edn (or its equivalent for lein).
 ```edn
 {:deps
  s-expresso/clojobuf {:git/url "https://github.com/s-expresso/clojobuf.git"
-                            :git/sha "a27678954716a518d8616da9f86918a045e1e23d"
-                            :git/tag "v0.1.5"}}
+                            :git/sha "ed35626efd1e46555697ab220d6cc2e98ec71742"
+                            :git/tag "v0.1.6"}}
 ```
 
 Say you have the following `example.proto` file
@@ -155,19 +155,19 @@ Sample validation schema
   [:float_val {:optional true} float?]]}
 ```
 
-You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for an example.
+You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for a working example.
 
 ## protoc-macro
-To invoke protoc at compile time, you can use the following. This is especially useful for cljs which cannot use protoc at runtime as js doesn't have file system access.
+You can use `protoc-macro` to invoke protoc at compile time. For this, `:auto-malli-registry` is hardcoded to `false`, hence use of `->malli-registry` is needed to convert the malli schema into malli registry.
 ```clj
 (ns clojobuf.example.ex3
-  (:require [clojobuf.core :refer [encode decode find-fault ->malli-registry]]
+  (:require [clojobuf.core :refer [->malli-registry]]
             [clojobuf.macro :refer [protoc-macro]]))
 
-(def registry (let [[codec malli] (protoc-macro ["resources/protobuf/"] ["example.proto"])]
-                [codec (->malli-registry malli)]))
+(def registry (let [[codec-schema malli-schema] (protoc-macro ["resources/protobuf/"] ["example.proto"])]
+                [codec-schema (->malli-registry malli-schema)]))
 ```
-See [src/clojobuf/example/ex3.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex3.cljc) for an example.
+`protoc-macro` is especially useful for cljs as it doesn't have file system access at runtime. See [src/clojobuf/example/ex3.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex3.cljc) for a working example.
 
 ## Unknown Fields
 During decode, unknown fields are placed into `:?` as a vector of 3 values (field number, wire type, wire value).
