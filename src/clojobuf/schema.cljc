@@ -124,8 +124,8 @@
   [(into
     [[(keyword name) {:optional true} (into [:enum] (map #(keyword (nth % 2))) forms)]]
     (map vxform-oneof-field forms))
-   [:fn `(fn [kvs] (if-let [oneof-target (kvs ~(keyword name))]
-                     (contains? kvs oneof-target)
+   [:fn `(fn [kvs#] (if-let [oneof-target# (kvs# ~(keyword name))]
+                     (contains? kvs# oneof-target#)
                      true))]])
 
 (defn- vld-msg-children-processor

@@ -157,6 +157,17 @@ Sample validation schema
 
 You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for an example.
 
+## protoc-macro
+To invoke protoc at compile time, you can use the following. This is especially useful for cljs which cannot use protoc at runtime as js doesn't have file system access.
+```clj
+(ns clojobuf.example.ex3
+  (:require [clojobuf.core :refer [encode decode find-fault ->malli-registry]]
+            [clojobuf.macro :refer [protoc-macro]]))
+
+(def registry (let [[codec malli] (protoc-macro ["resources/protobuf/"] ["example.proto"])]
+                [codec (->malli-registry malli)]))
+```
+See [src/clojobuf/example/ex3.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex3.cljc) for an example.
 
 ## Unknown Fields
 During decode, unknown fields are placed into `:?` as a vector of 3 values (field number, wire type, wire value).
