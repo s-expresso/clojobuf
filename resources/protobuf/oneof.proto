@@ -3,6 +3,7 @@ syntax = "proto3";
 import "enum.proto";
 import "packed.proto";
 import "singular.proto";
+import "no_package.proto";
 
 package my.ns.oneof;
 
@@ -35,6 +36,8 @@ message Either {
         // message
         singular.Singular singular_msg = 17;
         packed.Packed packed_msg = 18;
+        Msg1 msg_1 = 19;
+        MsgA msg_a = 20;
 
     }
 }

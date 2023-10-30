@@ -94,7 +94,9 @@
              :sfixed32_val
              :float_val
              :singular_msg
-             :packed_msg]]
+             :packed_msg
+             :msg_1
+             :msg_a]]
            [:int32_val {:optional true} :int32]
            [:int64_val {:optional true} :int64]
            [:uint32_val {:optional true} :uint32]
@@ -112,7 +114,9 @@
            [:sfixed32_val {:optional true} :sfixed32]
            [:float_val {:optional true} :double]
            [:singular_msg {:optional true} [:ref :my.ns.singular/Singular]]
-           [:packed_msg {:optional true} [:ref :my.ns.packed/Packed]]]
+           [:packed_msg {:optional true} [:ref :my.ns.packed/Packed]]
+           [:msg_1 {:optional true} [:ref :./Msg1]]
+           [:msg_a {:optional true} [:ref :./MsgA]]]
           ; TODO compare dynamic function at end of form (currently bypassed with drop-last)
           ]))
   (is (true?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val, :string_val "abc"} registry)))
