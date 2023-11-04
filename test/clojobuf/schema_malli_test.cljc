@@ -1,5 +1,7 @@
 (ns clojobuf.schema-malli-test
-  (:require [clojobuf.core :refer [protoc ->malli-registry]]
+  (:require #?(:clj [clojobuf.core :refer [protoc ->malli-registry]])
+            #?(:cljs [clojobuf.nodejs :refer [protoc]])
+            #?(:cljs [clojobuf.core :refer [->malli-registry]])
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]))

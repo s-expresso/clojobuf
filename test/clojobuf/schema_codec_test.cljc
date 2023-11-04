@@ -1,5 +1,6 @@
 (ns clojobuf.schema-codec-test
-  (:require [clojobuf.core :refer [protoc]]
+  (:require #?(:clj [clojobuf.core :refer [protoc]]
+               :cljs [clojobuf.nodejs :refer [protoc]])
             [clojure.test :refer [is deftest run-tests]]))
 
 (def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]))

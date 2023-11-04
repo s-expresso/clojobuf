@@ -6,7 +6,7 @@
             [malli.core :as m]
             [malli.error :as me]
             [malli.registry :as mr]
-            [rubberbuf.core :as rc]
+            #?(:clj [rubberbuf.core :as rc]) ; rubberbuf.core uses rubberbuf.util which uses cljs-node-io.core that is not available to cljs browser runtime
             [rubberbuf.ast-postprocess :refer [unnest]]
             #?(:cljs [sci.core]) ; manual require needed for cljs to serialize/deserialize function
             ))
@@ -46,15 +46,18 @@
               m/default-registry
               (into vschemas-pb-types input))})
 
-(defn protoc
-  "Generate codec and malli registries and return them as a tuple."
-  [paths files & {:keys [auto-malli-registry] :or {auto-malli-registry true}}]
-  (let [rast (unnest (rc/protoc paths files))
+; protoc needs file access which is not available to cljs browser runtime
+; * for cljs browser runtime, use clojobuf.macro/protoc-macro
+; * for cljs nodejs runtime, use clojobuf.nodejs/protoc
+#?(:clj (defn protoc
+          "Generate codec and malli registries and return them as a tuple."
+          [paths files & {:keys [auto-malli-registry] :or {auto-malli-registry true}}]
+          (let [rast (unnest (rc/protoc paths files))
         ; TODO below is super inefficient, use transducer or other ways
-        codec_malli_pairs (reduce into [] (map xform-ast (map val rast)))
-        codec (into {} (map first) codec_malli_pairs)
-        malli (into {} (map second) codec_malli_pairs)
-        malli (if auto-malli-registry
-                (->malli-registry malli)
-                malli)]
-    [codec malli]))
+                codec_malli_pairs (reduce into [] (map xform-ast (map val rast)))
+                codec (into {} (map first) codec_malli_pairs)
+                malli (into {} (map second) codec_malli_pairs)
+                malli (if auto-malli-registry
+                        (->malli-registry malli)
+                        malli)]
+            [codec malli])))

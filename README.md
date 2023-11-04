@@ -81,7 +81,11 @@ Code will be like [src/clojobuf/example/ex1.cljc](https://github.com/s-expresso/
 ```
 i.e. these 4 functions are all you need: `protoc`, `encode`, `decode` and `find-fault`
 
-## protoc
+Note: `clojobuf.core/protoc` is only available to clj runtime, for cljs runtime, use:
+* `clojobuf.nodejs/protoc` which works for cljs targeting nodejs, or
+* `clojobuf.macro/protoc-macro` which works for both clj and cljs
+
+## clojobuf.core/protoc
 `protoc` function generates 2 schemas: 1 for encoding/decoding and 1 for validation.
 
 Sample encoding/decoding schema
@@ -157,7 +161,10 @@ Sample validation schema
 
 You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for a working example.
 
-## protoc-macro
+## clojobuf.nodejs/protoc
+`clojobuf.nodejs/protoc` uses NodeJS file system module but otherwise works exactly that same way as `clojobuf.core/protoc`. It is placed in a separate namespace to provide flexibility to require it separately, as file access isn't available to browser runtime.
+
+## clojobuf.macro/protoc-macro
 You can use `protoc-macro` to invoke protoc at compile time. For this, `:auto-malli-registry` is hardcoded to `false`, hence use of `->malli-registry` is needed to convert the malli schema into malli registry.
 ```clj
 (ns clojobuf.example.ex3
@@ -167,7 +174,7 @@ You can use `protoc-macro` to invoke protoc at compile time. For this, `:auto-ma
 (def registry (let [[codec-schema malli-schema] (protoc-macro ["resources/protobuf/"] ["example.proto"])]
                 [codec-schema (->malli-registry malli-schema)]))
 ```
-`protoc-macro` is especially useful for cljs as it doesn't have file system access at runtime. See [src/clojobuf/example/ex3.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex3.cljc) for a working example.
+`protoc-macro` works on all runtime, but is especially useful for cljs targeting browser as it doesn't have file system access at runtime. See [src/clojobuf/example/ex3.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex3.cljc) for a working example.
 
 ## Unknown Fields
 During decode, unknown fields are placed into `:?` as a vector of 3 values (field number, wire type, wire value).

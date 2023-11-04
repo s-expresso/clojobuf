@@ -4,9 +4,10 @@
         org.babashka/sci {:mvn/version "0.8.40"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.60"}
-        s-expresso/rubberbuf {:git/url "https://github.com/s-expresso/rubberbuf.git"
-                              :git/sha "08a8b87147ebe679a404e011178f7366c97ec5b6"
-                              :git/tag "v0.1.9"}
+        s-expresso/rubberbuf {:local/root "../rubberbuf"}
+       ;;  s-expresso/rubberbuf {:git/url "https://github.com/s-expresso/rubberbuf.git"
+       ;;                        :git/sha "08a8b87147ebe679a404e011178f7366c97ec5b6"
+       ;;                        :git/tag "v0.1.9"}
         s-expresso/clojobuf-codec {:git/url "https://github.com/s-expresso/clojobuf-codec.git"
                                    :git/sha "9503c903ebcb8d09b183b7c6349f765e98f1dcbc"
                                    :git/tag "v0.1.5"}}
