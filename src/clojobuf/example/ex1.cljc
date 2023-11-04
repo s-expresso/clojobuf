@@ -1,5 +1,7 @@
 (ns clojobuf.example.ex1
-  (:require [clojobuf.core :refer [encode decode find-fault protoc]]))
+  (:require #?(:clj  [clojobuf.core :refer [encode decode find-fault protoc]] 
+               :cljs [clojobuf.core :refer [encode decode find-fault]])
+            #?(:cljs [clojobuf.nodejs :refer [protoc]])))
 
 ; first use protoc to compile a registry
 (def registry (protoc ["resources/protobuf/"] ["example.proto"]))

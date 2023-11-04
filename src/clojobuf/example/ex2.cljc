@@ -1,5 +1,7 @@
 (ns clojobuf.example.ex2
-  (:require [clojobuf.core :refer [encode decode find-fault protoc ->malli-registry]]))
+  (:require #?(:clj  [clojobuf.core :refer [encode decode find-fault ->malli-registry protoc]]
+               :cljs [clojobuf.core :refer [encode decode find-fault ->malli-registry]])
+            #?(:cljs [clojobuf.nodejs :refer [protoc]])))
 
 ; use protoc with :auto-malli-registry false
 (def schemas (protoc ["resources/protobuf/"] ["example.proto"] :auto-malli-registry false))

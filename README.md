@@ -8,8 +8,8 @@ Add the following to deps.edn (or its equivalent for lein).
 ```edn
 {:deps
  s-expresso/clojobuf {:git/url "https://github.com/s-expresso/clojobuf.git"
-                            :git/sha "85e9e198f017991c8bf0f71d7543f215dd28255c"
-                            :git/tag "v0.1.7"}}
+                      :git/sha "85e9e198f017991c8bf0f71d7543f215dd28255c"
+                      :git/tag "v0.1.7"}}
 ```
 
 Say you have the following `example.proto` file
@@ -90,73 +90,80 @@ Note: `clojobuf.core/protoc` is only available to clj runtime, for cljs runtime,
 
 Sample encoding/decoding schema
 ```clojure
-#:my.pb.ns{:Enum
-           {:syntax :proto2,
-            :type :enum,
-            :default :MINUS_ONE,
-            :encode {:MINUS_ONE -1, :ZERO 0, :ONE 1},
-            :decode {-1 :MINUS_ONE, 0 :ZERO, 1 :ONE}},
-           :Msg
-           {:syntax :proto2,
-            :type :msg,
-            :encode
-            {:string_val [2 :string :optional nil],
-             :sint32_val [5 :sint32 :oneof nil],
-             :double_vals [8 :double :repeated nil],
-             :sint64_val [6 :sint64 :oneof nil],
-             :bool_val [3 :bool :optional nil],
-             :int64_string [7 :map [:int64 :string] nil],
-             :enum_val [4 "my.pb.ns/Enum" :optional nil],
-             :int32_val [1 :int32 :optional nil],
-             :either [:oneof :sint32_val :sint64_val]},
-            :decode
-            {1 [:int32_val :int32 :optional nil],
-             2 [:string_val :string :optional nil],
-             3 [:bool_val :bool :optional nil],
-             4 [:enum_val "my.pb.ns/Enum" :optional nil],
-             5 [:sint32_val :sint32 [:oneof :either] nil],
-             6 [:sint64_val :sint64 [:oneof :either] nil],
-             7 [:int64_string :map [:int64 :string] nil],
-             8 [:double_vals :double :repeated nil]}},
-           :Msg2
-           {:syntax :proto2,
-            :type :msg,
-            :encode {:msg1 [1 "my.pb.ns/Msg" :optional nil], :msg1s [2 "my.pb.ns/Msg" :repeated nil]},
-            :decode {1 [:msg1 "my.pb.ns/Msg" :optional nil], 2 [:msg1s "my.pb.ns/Msg" :repeated nil]}}}
+[#:my.pb.ns{:Enum
+            {:syntax :proto2,
+             :type :enum,
+             :default :MINUS_ONE,
+             :encode {:MINUS_ONE -1, :ZERO 0, :ONE 1},
+             :decode {-1 :MINUS_ONE, 0 :ZERO, 1 :ONE}},
+            :Msg
+            {:syntax :proto2,
+             :type :msg,
+             :encode
+             {:string_val [2 :string :optional nil],
+              :sint32_val [5 :sint32 :oneof nil],
+              :double_vals [8 :double :repeated nil],
+              :sint64_val [6 :sint64 :oneof nil],
+              :bool_val [3 :bool :optional nil],
+              :int64_string [7 :map [:int64 :string] nil],
+              :enum_val [4 "my.pb.ns/Enum" :optional nil],
+              :int32_val [1 :int32 :optional nil],
+              :either [:oneof :sint32_val :sint64_val]},
+             :decode
+             {1 [:int32_val :int32 :optional nil],
+              2 [:string_val :string :optional nil],
+              3 [:bool_val :bool :optional nil],
+              4 [:enum_val "my.pb.ns/Enum" :optional nil],
+              5 [:sint32_val :sint32 [:oneof :either] nil],
+              6 [:sint64_val :sint64 [:oneof :either] nil],
+              7 [:int64_string :map [:int64 :string] nil],
+              8 [:double_vals :double :repeated nil]}},
+            :Msg2
+            {:syntax :proto2,
+             :type :msg,
+             :encode
+             {:msg1 [1 "my.pb.ns/Msg" :optional nil],
+              :msg1s [2 "my.pb.ns/Msg" :repeated nil]},
+             :decode
+             {1 [:msg1 "my.pb.ns/Msg" :optional nil],
+              2 [:msg1s "my.pb.ns/Msg" :repeated nil]}}}
 ```
 
 Sample validation schema
 * note you have to invoke `protoc` with optional named arg `:auto-malli-registry false` to get a schema as plain map like below
 * and yes this is [malli schema](https://github.com/metosin/malli) :)
 ```clojure
-{:my.ns.enum/Enum [:enum :MINUS_ONE :ZERO :ONE :TWO :THREE :FOUR :FIVE],
- :my.ns.nested/Msg1
- [:map
-  {:closed true}
-  [:enum {:optional true} [:ref :my.ns.enum/Enum]]
-  [:nested2 {:optional true} [:ref :my.ns.nested/Msg1.Msg2]]
-  [:nested3 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
-  [:nested4 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
-  [:nested5 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]],
- :my.ns.singular/Singular
- [:map
-  {:closed true}
-  [:int32_val {:optional true} int?]
-  [:int64_val {:optional true} int?]
-  [:uint32_val {:optional true} int?]
-  [:uint64_val {:optional true} int?]
-  [:sint32_val {:optional true} int?]
-  [:sint64_val {:optional true} int?]
-  [:bool_val {:optional true} boolean?]
-  [:enum_val {:optional true} [:ref :my.ns.enum/Enum]]
-  [:fixed64_val {:optional true} int?]
-  [:sfixed64_val {:optional true} int?]
-  [:double_val {:optional true} double?]
-  [:string_val {:optional true} string?]
-  [:bytes_val {:optional true} bytes?]
-  [:fixed32_val {:optional true} int?]
-  [:sfixed32_val {:optional true} int?]
-  [:float_val {:optional true} float?]]}
+ #:my.pb.ns{:Enum [:enum :MINUS_ONE :ZERO :ONE],
+            :Msg
+            [:and
+             [:map
+              {:closed true}
+              [:int32_val {:optional true} :int32]
+              [:string_val {:optional true} :string]
+              [:bool_val {:optional true} :boolean]
+              [:enum_val {:optional true} [:ref :my.pb.ns/Enum]]
+              [:either
+               {:optional true}
+               [:enum :sint32_val :sint64_val]]
+              [:sint32_val {:optional true} :sint32]
+              [:sint64_val {:optional true} :sint64]
+              [:int64_string {:optional true} [:map-of :int64 :string]]
+              [:double_vals {:optional true} [:vector :double]]]
+             [:fn
+              (cljs.core/fn
+               [kvs__29551__auto__]
+               (cljs.core/if-let
+                [oneof-target__29552__auto__
+                 (kvs__29551__auto__ :either)]
+                (cljs.core/contains?
+                 kvs__29551__auto__
+                 oneof-target__29552__auto__)
+                true))]],
+            :Msg2
+            [:map
+             {:closed true}
+             [:msg1 {:optional true} [:ref :my.pb.ns/Msg]]
+             [:msg1s {:optional true} [:vector [:ref :my.pb.ns/Msg]]]]}]
 ```
 
 You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for a working example.
