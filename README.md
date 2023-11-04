@@ -8,8 +8,8 @@ Add the following to deps.edn (or its equivalent for lein).
 ```edn
 {:deps
  s-expresso/clojobuf {:git/url "https://github.com/s-expresso/clojobuf.git"
-                      :git/sha "85e9e198f017991c8bf0f71d7543f215dd28255c"
-                      :git/tag "v0.1.7"}}
+                      :git/sha "fc27f61ec3bf2d5c9ea671b15dd24d06f2fb8b6f"
+                      :git/tag "v0.1.8"}}
 ```
 
 Say you have the following `example.proto` file
