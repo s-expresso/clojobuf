@@ -38,13 +38,17 @@
   (-> (m/explain (dot-qualify msg-id) msg (second registry))
       (me/humanize)))
 
+(defn ->complete-malli-schema
+  "Add value schema to a composite registry. Return the new registry."
+  [schema] (into vschemas-pb-types schema))
+
 (defn ->malli-registry
   "Use `input`, which is expected to be (second (protoc ... :malli-composite-registry false)), to build
    a malli registry and returns it."
-  [input]
+  [schema]
   {:registry (mr/composite-registry
               m/default-registry
-              (into vschemas-pb-types input))})
+              (->complete-malli-schema schema))})
 
 ; protoc needs file access which is not available to cljs browser runtime
 ; * for cljs browser runtime, use clojobuf.macro/protoc-macro

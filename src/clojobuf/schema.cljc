@@ -1,7 +1,8 @@
 (ns clojobuf.schema
   (:require [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojobuf.util :refer [dot-qualify]]
-            [clojure.set :refer [map-invert]]))
+            [clojure.set :refer [map-invert]]
+            [malli.core :as m]))
 
 (defn- qualify-name [package name]
   (keyword (if (empty? package) name (str package "/" name))))
@@ -69,6 +70,22 @@
                :oneof (bxform-oneof msg-child)
                nil)))
 
+(def OneOf
+  (m/-simple-schema
+   {:type `OneOf
+    :compile (fn [_properties [oneof targets] _options]
+               (when-not (and (keyword? oneof)
+                              (every? keyword? targets)) 
+                 (m/-fail! ::invalid-children {:oneof oneof :targets targets}))
+               {:pred (fn [kvs] (if-let [target (kvs oneof)]
+                                  (and (contains? kvs target)
+                                       (= 1 (count (clojure.set/intersection (set targets) (set (keys kvs))))))
+                                  (= 0 (count (clojure.set/intersection (set targets) (set (keys kvs)))))))
+                :min 2 ;; at least 1 child
+                :max 2 ;; at most 1 child
+                :type-properties  {:error/fn (fn [_error _reg] {oneof (str "oneof condition not met: only this field's target can be set but not the other targets" )})
+                                   :error/path [oneof]}})}))
+
 ; -------------------- msg validator -----------------------------
 (def vschemas-pb-types {:int32     [:int {:min sint32-min, :max sint32-max}]
                         :sint32    [:int {:min sint32-min, :max sint32-max}]
@@ -87,7 +104,8 @@
                                                                                   (<= v uint64-max)))]]
                                       :cljs [:int {:min uint64-min, :max uint64-max}])
                         :bytes     #?(:clj 'bytes?
-                                      :cljs [:fn (fn [v] (= js/Uint8Array (type v)))])})
+                                      :cljs [:fn (fn [v] (= js/Uint8Array (type v)))])
+                        :oneof     OneOf})
 
 (defn- get-malli-type [typ]
   (cond
@@ -117,16 +135,14 @@
    [ [[:either [:enum :name :msg]]
       [:name string?]
       [:msg [:ref :Msg]]]
-     [:fn '(fn [kvs] (if-let [oneof-target (kvs :either)]
-                     (contains? kvs oneof-target)
-                     true))] ]"
+     [:oneof :either [:name :msg]] ]"
   [[_ name & forms]]
-  [(into
-    [[(keyword name) {:optional true} (into [:enum] (map #(keyword (nth % 2))) forms)]]
-    (map vxform-oneof-field forms))
-   [:fn `(fn [kvs#] (if-let [oneof-target# (kvs# ~(keyword name))]
-                     (contains? kvs# oneof-target#)
-                     true))]])
+  (let [oneof-key (keyword name)
+        targets (map #(keyword (nth % 2)) forms)]
+    [(into
+      [[oneof-key {:optional true} (into [:enum] targets)]]
+      (map vxform-oneof-field forms))
+     [:oneof oneof-key (into [] targets)]]))
 
 (defn- vld-msg-children-processor
   "msg-children are child nodes within message; each can be :field, :mapField, :oneof or :option."

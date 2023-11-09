@@ -5,6 +5,10 @@
 
 (defn oneof? [field-def] (= (first field-def) :oneof))
 
+(defn oneof-target?
+  "field-def example: [14 :fixed32 :oneof nil]"
+  [field-def] (= (nth field-def 2) :oneof))
+
 (defn encode-prifield
   "Encode a primitive field
    field-schema: e.g. [12 :string :optional nil]"
@@ -103,11 +107,14 @@
                 (encode-prifield writer proto2|3 target-field-schema (msg v))))
 
             (msg|enum? field-schema)
-            (encode-msgfield|enumfield writer codec-registry field-schema v)
+            (when-not (oneof-target? field-schema)
+              (encode-msgfield|enumfield writer codec-registry field-schema v))
 
             (map?? field-schema)
             (encode-mapfield writer codec-registry field-schema v)
 
-            :else (encode-prifield writer proto2|3 field-schema v)))
+            :else
+            (when-not (oneof-target? field-schema)
+              (encode-prifield writer proto2|3 field-schema v))))
         (recur (inc idx))))
     (->bytes writer)))

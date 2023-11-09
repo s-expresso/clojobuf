@@ -122,7 +122,7 @@
           ; TODO compare dynamic function at end of form (currently bypassed with drop-last)
           ]))
   (is (true?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val, :string_val "abc"} registry)))
-  (is (true?  (m/validate [:ref :my.ns.oneof/Either] {:string_val "abc"} registry)))
+  (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:string_val "abc"} registry)))
   (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val} registry)))
   (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:either :string_val, :uint32_val 1} registry)))
   (is (false?  (m/validate [:ref :my.ns.oneof/Either] {:a :b} registry))))

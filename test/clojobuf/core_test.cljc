@@ -52,6 +52,11 @@
   (rt :my.ns.oneof/Either {:either :packed_msg, :packed_msg {}})
   (rt :my.ns.oneof/Either {:either :packed_msg, :packed_msg {:int32_val [1]}}))
 
+(deftest test-codec-oneof-failure
+  (is (= (find-fault registry :my.ns.oneof/Either {:either :int32_val, :int64_val 0})
+         [{:either "oneof condition not met: only this field's target can be set but not the other targets"}]))
+  (is (= (find-fault registry :my.ns.oneof/Either {:int64_val 0})
+         [{:either "oneof condition not met: only this field's target can be set but not the other targets"}])))
 
 (deftest test-codec-singular
   (rt :my.ns.singular/Singular {:int32_val    -1})
@@ -189,4 +194,3 @@
   (rt :my.ns.extension/Extendable {:int32_val 1, :int64_val 2})
   (rt :my.ns.extension/Extendable {:my.ns.extension/Msg1.double_val 1.0})
   (rt :my.ns.extension/Extendable {:my.ns.extension/string_val "abcd"}))
-
