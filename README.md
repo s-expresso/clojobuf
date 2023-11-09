@@ -149,16 +149,7 @@ Sample validation schema
               [:sint64_val {:optional true} :sint64]
               [:int64_string {:optional true} [:map-of :int64 :string]]
               [:double_vals {:optional true} [:vector :double]]]
-             [:fn
-              (cljs.core/fn
-               [kvs__29551__auto__]
-               (cljs.core/if-let
-                [oneof-target__29552__auto__
-                 (kvs__29551__auto__ :either)]
-                (cljs.core/contains?
-                 kvs__29551__auto__
-                 oneof-target__29552__auto__)
-                true))]],
+             [:oneof :either [:sint32_val :sint64_val]]],
             :Msg2
             [:map
              {:closed true}
