@@ -5,6 +5,7 @@
             [clojobuf.util :refer [dot-qualify]]
             [malli.core :as m]
             [malli.error :as me]
+            [malli.generator :as mg]
             [malli.registry :as mr]
             #?(:clj [rubberbuf.core :as rc]) ; rubberbuf.core uses rubberbuf.util which uses cljs-node-io.core that is not available to cljs browser runtime
             [rubberbuf.ast-postprocess :refer [unnest]]
@@ -38,12 +39,16 @@
   (-> (m/explain (dot-qualify msg-id) msg (second registry))
       (me/humanize)))
 
+(defn generate
+  [registry msg-id]
+  (mg/generate [:ref (dot-qualify msg-id)] (second registry)))
+
 (defn ->complete-malli-schema
   "Add value schema to a composite registry. Return the new registry."
   [schema] (into vschemas-pb-types schema))
 
 (defn ->malli-registry
-  "Use `input`, which is expected to be (second (protoc ... :malli-composite-registry false)), to build
+  "Use `schema`, which is expected to be (second (protoc ... :malli-composite-registry false)), to build
    a malli registry and returns it."
   [schema]
   {:registry (mr/composite-registry

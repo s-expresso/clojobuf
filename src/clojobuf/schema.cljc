@@ -100,6 +100,20 @@
                                   :gen/gen (gen/return #?(:clj (byte-array 0)
                                                           :cljs (js/Uint8Array.)))}})}))
 
+(def Uint64
+  (m/-simple-schema
+   {:type `Uint64
+    :compile (fn [_properties [] _options]
+               {:pred #?(:clj #(or (and (int? %) (>= % 0)) (and (= (type %) clojure.lang.BigInt)
+                                                                (>= % 0)
+                                                                (<= % uint64-max)))
+                         :cljs #(and (int? %) (>= % 0)))
+                :min 0 ;; no child
+                :max 0 ;; no child 
+                :type-properties {:error/message "unsigned 64-bit integer"
+                                  :gen/gen #?(:clj (gen/large-integer* {:min 0, :max sint64-max})
+                                              :cljs (gen/large-integer* {:min 0, :max sint53-max}))}})}))
+                                  
 ; -------------------- msg validator -----------------------------
 (def vschemas-pb-types {:int32     [:int {:min sint32-min, :max sint32-max}]
                         :sint32    [:int {:min sint32-min, :max sint32-max}]
@@ -109,14 +123,8 @@
                         :int64     [:int {:min sint64-min, :max sint64-max}]
                         :sint64    [:int {:min sint64-min, :max sint64-max}]
                         :sfixed64  [:int {:min sint64-min, :max sint64-max}]
-                        :uint64    #?(:clj [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
-                                                                                  (>= v 0)
-                                                                                  (<= v uint64-max)))]]
-                                      :cljs [:int {:min uint64-min, :max uint64-max}])
-                        :fixed64   #?(:clj [:or [:int {:min 0}] [:fn (fn [v] (and (= (type v) clojure.lang.BigInt)
-                                                                                  (>= v 0)
-                                                                                  (<= v uint64-max)))]]
-                                      :cljs [:int {:min uint64-min, :max uint64-max}])
+                        :uint64    Uint64
+                        :fixed64   Uint64
                         :bytes     Bytes
                         :oneof     OneOf})
 

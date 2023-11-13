@@ -1,20 +1,19 @@
 (ns clojobuf.core-test
-  (:require [clojobuf.core :refer [encode decode find-fault ->malli-registry]]
+  (:require [clojobuf.core :refer [encode decode find-fault generate ->malli-registry ->complete-malli-schema]]
             [clojobuf.macro :refer [protoc-macro]]
-            [clojure.test :refer [is deftest run-tests]]
-            [malli.core :as m]))
+            [clojure.test :refer [is deftest run-tests]]))
 
 
 ; use protoc-macro as it has more possibilites of failing than protoc
-(def registry (let [[codec malli] (protoc-macro ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"])]
-                [codec (->malli-registry malli)]))
+(def schemas (protoc-macro ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]))
+(def registry (let [[codec malli] schemas] [codec (->malli-registry malli)]))
+
+(def malli-schema (->complete-malli-schema (second schemas)))
 
 (defn codec [msg-id msg]
   (->> msg
        (encode registry msg-id)
        (decode registry msg-id)))
-
-(m/validate [:ref :my.ns.map/Mappy] {:a :b} (second registry))
 
 #?(:clj (defmacro rt [msg-id msg]
           `(is (= (codec ~msg-id ~msg) ~msg))))
@@ -194,3 +193,5 @@
   (rt :my.ns.extension/Extendable {:int32_val 1, :int64_val 2})
   (rt :my.ns.extension/Extendable {:my.ns.extension/Msg1.double_val 1.0})
   (rt :my.ns.extension/Extendable {:my.ns.extension/string_val "abcd"}))
+
+;(run-tests)

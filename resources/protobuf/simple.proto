@@ -1,0 +1,44 @@
+syntax = "proto2";
+
+package my.ns.simple;
+
+enum Enum {
+    MINUS_ONE = -1;
+    ZERO = 0;
+    ONE = 1;
+    TWO = 2;
+    THREE = 3;
+    FOUR = 4;
+    FIVE = 5;
+}
+
+enum EnumV {
+    DEFAULT = 0;
+    V1 = 1;
+    V2 = 2;
+    V3 = 3;
+    V1000 = 1000;
+}
+
+message Simple {
+    // wire-type 0
+    optional int32 int32_val       = 1;
+    optional int64 int64_val       = 2;
+    optional uint32 uint32_val     = 3;
+    optional uint64 uint64_val     = 4;
+    optional sint32 sint32_val     = 5;
+    optional sint64 sint64_val     = 6;
+    optional bool bool_val         = 7;
+    optional Enum enum_val         = 8;
+    // wire-type 1
+    optional fixed64 fixed64_val   = 9;
+    optional sfixed64 sfixed64_val = 10;
+    optional double double_val     = 11;
+    // // wire-type 2
+    optional string string_val     = 12;
+    // optional bytes bytes_val    = 13;  // we use this schema for generation test which can't compare binary data properly
+    // wire-type 5
+    optional fixed32 fixed32_val   = 14;
+    optional sfixed32 sfixed32_val = 15;    
+    // optional float float_val    = 16; // we use this schema for generation test which can't compare float properly
+}
