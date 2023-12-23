@@ -10,10 +10,9 @@
   "Generate codec and malli registries and return them as a tuple."
   [paths files & {:keys [auto-malli-registry] :or {auto-malli-registry true}}]
   (let [rast (unnest (rc/protoc paths files))
-        ; TODO below is super inefficient, use transducer or other ways
-        codec_malli_pairs (reduce into [] (map xform-ast (map val rast)))
-        codec (into {} (map first) codec_malli_pairs)
-        malli (into {} (map second) codec_malli_pairs)
+        codec_malli_pairs (transduce (map (comp xform-ast val)) into [] rast)
+        codec             (transduce (map first)                into {} codec_malli_pairs)
+        malli             (transduce (map second)               into {} codec_malli_pairs)
         malli (if auto-malli-registry
                 (->malli-registry malli)
                 malli)]
