@@ -8,9 +8,7 @@
             [malli.generator :as mg]
             [malli.registry :as mr]
             #?(:clj [rubberbuf.core :as rc]) ; rubberbuf.core uses rubberbuf.util which uses cljs-node-io.core that is not available to cljs browser runtime
-            [rubberbuf.ast-postprocess :refer [unnest]]
-            #?(:cljs [sci.core]) ; manual require needed for cljs to serialize/deserialize function
-            ))
+            [rubberbuf.ast-postprocess :refer [unnest]]))
 
 (defn encode
   "Encode a message and return its protobuf binary, or return nil if msg is ill-formed.
