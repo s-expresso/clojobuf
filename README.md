@@ -6,10 +6,7 @@ clojure(script) library that dynamically interprets protobuf files (.proto) and 
 ## Usage
 Add the following to deps.edn (or its equivalent for lein).
 ```edn
-{:deps
- s-expresso/clojobuf {:git/url "https://github.com/s-expresso/clojobuf.git"
-                      :git/sha "80c12e68615812961cd90b5538c31ff57a02a529"
-                      :git/tag "v0.1.9"}}
+{:deps {com.github.s-expresso/clojobuf {:mvn/version "0.1.10"}}}
 ```
 
 Say you have the following `example.proto` file

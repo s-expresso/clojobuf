@@ -3,12 +3,9 @@
         metosin/malli {:mvn/version "0.13.0"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.60"}
-        s-expresso/rubberbuf {:git/url "https://github.com/s-expresso/rubberbuf.git"
-                              :git/sha "08a8b87147ebe679a404e011178f7366c97ec5b6"
-                              :git/tag "v0.1.9"}
-        s-expresso/clojobuf-codec {:git/url "https://github.com/s-expresso/clojobuf-codec.git"
-                                   :git/sha "9503c903ebcb8d09b183b7c6349f765e98f1dcbc"
-                                   :git/tag "v0.1.5"}}
+        com.github.s-expresso/rubberbuf {:mvn/version "0.1.9.a"}
+        com.github.s-expresso/clojobuf-codec {:mvn/version "0.1.6"}
+        }
  :aliases {:test {:extra-paths ["test"]}
 
            ; clj -M:test:runner
@@ -20,4 +17,18 @@
 
            ; clj -M:test:cljs to run cljs tests
            :cljs {:extra-deps {olical/cljs-test-runner {:mvn/version "3.8.0"}}
-                  :main-opts ["-m" "cljs-test-runner.main"]}}}
+                  :main-opts ["-m" "cljs-test-runner.main"]}
+           
+           ; update build.clj first
+           ; clj -T:build jar
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.9.3"}}
+                   :ns-default build}
+
+           ; update pom.xml and :artifact below first
+           ; ensure CLOJARS_USERNAME and CLOJARS_PASSWORD env vars are set
+           ; clj -T:deploy
+           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "0.2.0"}}
+                    :exec-fn deps-deploy.deps-deploy/deploy
+                    :exec-args {:installer :remote
+                                :sign-releases? false
+                                :artifact "target/clojobuf-0.1.10.jar"}}}}
