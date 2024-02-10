@@ -4,12 +4,12 @@
   <packaging>jar</packaging>
   <groupId>com.github.s-expresso</groupId>
   <artifactId>clojobuf</artifactId>
-  <version>0.1.11</version>
+  <version>0.1.12</version>
   <name>clojobuf</name>
   <scm>
     <connection>scm:git:git://github.com/s-expresso/clojobuf.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/s-expresso/clojobuf.git</developerConnection>
-    <tag>v0.1.11</tag>
+    <tag>v0.1.12</tag>
     <url>https://github.com/s-expresso/clojobuf</url>
   </scm>
   <dependencies>
@@ -32,6 +32,11 @@
       <groupId>com.google.javascript</groupId>
       <artifactId>closure-compiler-unshaded</artifactId>
       <version>v20230103</version>
+    </dependency>
+    <dependency>
+      <groupId>metosin</groupId>
+      <artifactId>malli</artifactId>
+      <version>0.13.0</version>
     </dependency>
     <dependency>
       <groupId>com.github.s-expresso</groupId>
