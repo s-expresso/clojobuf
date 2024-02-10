@@ -3,6 +3,7 @@
         metosin/malli {:mvn/version "0.13.0"}
         org.clojure/clojure {:mvn/version "1.11.1"}
         org.clojure/clojurescript {:mvn/version "1.11.60"}
+        org.clojure/test.check {:mvn/version "0.10.0"}
         com.github.s-expresso/rubberbuf {:mvn/version "0.1.9.a"}
         com.github.s-expresso/clojobuf-codec {:mvn/version "0.1.6"}
         }
@@ -31,4 +32,4 @@
                     :exec-fn deps-deploy.deps-deploy/deploy
                     :exec-args {:installer :remote
                                 :sign-releases? false
-                                :artifact "target/clojobuf-0.1.10.jar"}}}}
+                                :artifact "target/clojobuf-0.1.11.jar"}}}}
