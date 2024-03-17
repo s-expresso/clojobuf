@@ -3,7 +3,7 @@ clojobuf
 
 clojure(script) library that dynamically interprets protobuf files (.proto) and use the resultant schemas to encode/decode plain clojure(script) map into/from protobuf binaries. Supports both proto2 and proto3.
 
-## Usage
+## TL;DR
 Add the following to deps.edn (or its equivalent for lein).
 ```edn
 {:deps {com.github.s-expresso/clojobuf {:mvn/version "0.1.12"}}}
@@ -44,7 +44,12 @@ Code will be like [src/clojobuf/example/ex1.cljc](https://github.com/s-expresso/
 (ns clojobuf.example.ex1
   (:require [clojobuf.core :refer [encode decode find-fault protoc]]))
 
-(def registry (protoc ["resources/protobuf/"] ["example.proto"]))
+; :auto-malli-registry and :auto-import both default to true if omitted
+(def registry (protoc ["resources/protobuf/"]     ;; paths to look for protobuf files
+                      ["example.proto"]           ;; protobuf files to be processed
+                      ; :auto-malli-registry true ;; default true; see below for usage
+                      ; :auto-import true         ;; default true; automatically load all imports, recursively
+                      ))
 
 (def msg {:int32_val -1,
           :string_val "abc",
@@ -83,7 +88,29 @@ Note: `clojobuf.core/protoc` is only available to clj runtime, for cljs runtime,
 * `clojobuf.macro/protoc-macro` which works for both clj and cljs
 
 ## clojobuf.core/protoc
-`protoc` function generates 2 schemas: 1 for encoding/decoding and 1 for validation.
+
+### Usage
+```
+(protoc PATHS FILES <KWARGS>)
+```
+Where
+* `PATHS` - a vector of paths
+  * example: `["a/b/path1/", "a/b/path2/", "/path/to/google/protobuf/src/"]`
+  * each path must have trailing `/` (or `\` on Windows)
+* `FILES` - a vector of protobuf files to be processed
+  * example: `["file1.proto", "file2.proto" "subdir/file3.proto"]`
+  * each file will be looked up in `PATHS` following its declaration order and only the first match will be processed
+* `<KWARGS>`
+  * `:auto-import` - default `true`; instructs `protoc` to recursively load all imports, supports circular import
+  * `:auto-malli-registry` - default `true`; if `false`, validation schema is output as plain malli data, see below for more info
+
+### Output
+
+`protoc` function returns a registry which is passed into `encode`, `decode` and `find-fault` as its first parameter.
+
+You do not need to know the registry's content, but in case you are curious, its details are provided below.
+
+A registry contains 2 schemas: 1 for encoding/decoding and 1 for validation. 
 
 Sample encoding/decoding schema
 ```clojure
@@ -154,7 +181,8 @@ Sample validation schema
              [:msg1s {:optional true} [:vector [:ref :my.pb.ns/Msg]]]]}]
 ```
 
-You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for a working example.
+Note:
+* You can also use `clojobuf.core/->malli-registry` to convert above plain map into a malli registry. See [src/clojobuf/example/ex2.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex2.cljc) for a working example.
 
 ## clojobuf.nodejs/protoc
 `clojobuf.nodejs/protoc` uses NodeJS file system module but otherwise works exactly that same way as `clojobuf.core/protoc`. It is placed in a separate namespace to provide flexibility to require it separately, as file access isn't available to browser runtime.
