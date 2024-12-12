@@ -123,10 +123,16 @@
                         :int64     [:int {:min sint64-min, :max sint64-max}]
                         :sint64    [:int {:min sint64-min, :max sint64-max}]
                         :sfixed64  [:int {:min sint64-min, :max sint64-max}]
-                        :uint64    Uint64
-                        :fixed64   Uint64
-                        :bytes     Bytes
+                        :uint64    [Uint64 {:default 0}]
+                        :fixed64   [Uint64 {:default 0}]
+                        :bytes     [Bytes {:default #?(:clj (byte-array 0)
+                                                       :cljs (js/Uint8Array.))}]
                         :oneof     OneOf})
+
+(def defaults {:string (constantly "")
+               :int {constantly 0}
+               :boolean (constantly false)
+               :double (constantly 0.0)})
 
 (defn- get-malli-type [typ]
   (cond
@@ -140,7 +146,8 @@
   (condp = rori
     :required [(keyword name) (get-malli-type typ)]
     :repeated [(keyword name) {:optional true} [:vector (get-malli-type typ)]]
-    [(keyword name) {:optional true} (get-malli-type typ)]))
+    :optional [(keyword name) {:optional true} (get-malli-type typ)]
+    [(keyword name) (if (string? typ) {:optional true} {}) (get-malli-type typ)]))
 
 (defn- vxform-map-field [[_ ktype vtype name field-id options]]
   [(keyword name) {:optional true} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])

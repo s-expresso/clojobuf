@@ -56,30 +56,30 @@
   "Encode a message field.
    field-schema: e.g. [1 'my.namespace/Mappy' :optional nil]
    value:        e.g. {:a :b, ..} or [{:a :b, ..} ...]"
-  [writer codec-registry msg-schema field-schema value]
-  (let [enc (fn [v] (->> (encode-msg codec-registry msg-schema v)
+  [writer registry msg-schema field-schema value]
+  (let [enc (fn [v] (->> (encode-msg registry msg-schema v)
                          (write-bytes writer (fid field-schema))))]
     (if (sequential? value) (run! enc value) (enc value))))
 
 (defn encode-msgfield|enumfield
   "Encode a message field or enum field.
    field-schema: e.g. [1 'my.namespace/Mappy' :optional nil]"
-  [writer codec-registry field-schema value]
+  [writer registry field-schema value]
   (let [msg|enum-id (msg|enum-id field-schema)
-        schema (codec-registry msg|enum-id)]
+        schema ((first registry) msg|enum-id)]
     (if (= (schema :type) :msg)
-      (encode-msgfield  writer codec-registry schema field-schema value)
-      (encode-enumfield writer                schema field-schema value))))
+      (encode-msgfield  writer registry schema field-schema value)
+      (encode-enumfield writer          schema field-schema value))))
 
 (defn encode-mapfield
   "Encode map field.
    field-schema: e.g. [1 :map [:uint32 :sint64] nil]
    value:        e.g. {123 456, 777 888, 999 1000} or [[123 456] [777 888] ...]"
-  [writer codec-registry field-schema value]
+  [writer registry field-schema value]
   (let [[ktype vtype] (ktype-vtype field-schema)
         msg-schema {:encode {:key [1 ktype :required nil]
                              :val [2 vtype :required nil]}}
-        enc-fn (fn [[k v]] (encode-msgfield writer codec-registry msg-schema field-schema {:key k :val v}))]
+        enc-fn (fn [[k v]] (encode-msgfield writer registry msg-schema field-schema {:key k :val v}))]
     (run! enc-fn (seq value))))
 
 (defn encode-msg
@@ -89,7 +89,7 @@
              :type :message,
              :encode {...},
              :decode {...}}"
-  [codec-registry schema msg]
+  [registry schema msg]
   (let [writer (make-writer)
         proto2|3 (schema :syntax)
         msg-schema (schema :encode)
@@ -103,15 +103,15 @@
             ; value of oneof == key of actual field in msg
             (let [target-field-schema (msg-schema v)]
               (if (msg|enum? target-field-schema)
-                (encode-msgfield|enumfield writer codec-registry target-field-schema (msg v))
+                (encode-msgfield|enumfield writer registry target-field-schema (msg v))
                 (encode-prifield writer proto2|3 target-field-schema (msg v))))
 
             (msg|enum? field-schema)
             (when-not (oneof-target? field-schema)
-              (encode-msgfield|enumfield writer codec-registry field-schema v))
+              (encode-msgfield|enumfield writer registry field-schema v))
 
             (map?? field-schema)
-            (encode-mapfield writer codec-registry field-schema v)
+            (encode-mapfield writer registry field-schema v)
 
             :else
             (when-not (oneof-target? field-schema)

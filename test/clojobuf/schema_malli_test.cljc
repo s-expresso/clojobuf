@@ -4,9 +4,14 @@
             #?(:cljs [clojobuf.core :refer [->malli-registry]])
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojure.test :refer [is deftest run-tests]]
-            [malli.core :as m]))
+            [malli.core :as m]
+            [malli.transform :as mt]))
 
-(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto",
+                                                  "no_package.proto",
+                                                  "extension.proto",
+                                                  "required.proto", 
+                                                  "implicit.proto"]
                          :auto-malli-registry false))
 (def malli-schema (second codec_malli))
 (def registry (->malli-registry malli-schema))
@@ -183,10 +188,49 @@
          [:map
           {:closed true}
           [:int32_val :int32]
-          [:string_val :string]]))
-  (is (true?  (m/validate [:ref :my.ns.required/Required] {:int32_val 0 :string_val ""} registry)))
+          [:int64_val :int64]
+          [:uint32_val :uint32]
+          [:uint64_val :uint64]
+          [:sint32_val :sint32]
+          [:sint64_val :sint64]
+          [:bool_val :boolean]
+          [:enum_val [:ref :my.ns.enum/Enum]]
+          [:fixed64_val :fixed64]
+          [:sfixed64_val :sfixed64]
+          [:double_val :double]
+          [:string_val :string]
+          [:fixed32_val :fixed32]
+          [:sfixed32_val :sfixed32]
+          [:float_val :double]]))
+  (is (true?  (m/validate [:ref :my.ns.required/Required] {:int32_val 0
+                                                           :int64_val 0
+                                                           :uint32_val 0
+                                                           :uint64_val 0
+                                                           :sint32_val 0
+                                                           :sint64_val 0
+                                                           :bool_val true
+                                                           :enum_val :ZERO
+                                                           :fixed64_val 0
+                                                           :sfixed64_val 0
+                                                           :double_val 0.0
+                                                           :string_val ""
+                                                           :fixed32_val 0
+                                                           :sfixed32_val 0
+                                                           :float_val 0.0}
+                          registry)))
   (is (false? (m/validate [:ref :my.ns.required/Required] {:int32_val 0} registry)))
   (is (false? (m/validate [:ref :my.ns.required/Required] {:string_val ""} registry))))
+
+(deftest test-schema-malli-implicit
+  (is (= (malli-schema :my.ns.implicit/Implicit) [:map
+                                                  {:closed true}
+                                                  [:int32_val {} :int32]
+                                                  [:string_val {} :string]]))
+  (is (false? (m/validate [:ref :my.ns.implicit/Implicit] {} registry)))
+  (is (false? (m/validate [:ref :my.ns.implicit/Implicit] {:int32_val 0} registry)))
+  (is (false? (m/validate [:ref :my.ns.implicit/Implicit] {:string_val ""} registry)))
+  (is (true? (m/validate [:ref :my.ns.implicit/Implicit] {:int32_val 0
+                                                          :string_val ""} registry))))
 
 (deftest test-schema-malli-singular
   (is (= (malli-schema :my.ns.singular/Singular)

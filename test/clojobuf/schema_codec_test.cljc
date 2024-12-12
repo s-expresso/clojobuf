@@ -3,7 +3,11 @@
                :cljs [clojobuf.nodejs :refer [protoc]])
             [clojure.test :refer [is deftest run-tests]]))
 
-(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]))
+(def codec_malli (protoc ["resources/protobuf/"] ["nested.proto",
+                                                  "no_package.proto", 
+                                                  "extension.proto", 
+                                                  "required.proto", 
+                                                  "implicit.proto"]))
 (def codec-schema (first codec_malli))
 
 (deftest test-schema-codec-enum
@@ -322,3 +326,56 @@
            2 [:int64_val :int64 :optional nil],
            100 [:my.ns.extension/Msg1.double_val :double :optional nil],
            101 [:my.ns.extension/string_val :string :optional nil]}})))
+
+(deftest test-required
+  (is (= (codec-schema :my.ns.required/Required)
+         {:syntax :proto2,
+          :type :msg,
+          :encode
+          {:string_val [12 :string :required nil],
+           :fixed32_val [14 :fixed32 :required nil],
+           :sint32_val [5 :sint32 :required nil],
+           :sfixed64_val [10 :sfixed64 :required nil],
+           :uint32_val [3 :uint32 :required nil],
+           :sint64_val [6 :sint64 :required nil],
+           :bool_val [7 :bool :required nil],
+           :uint64_val [4 :uint64 :required nil],
+           :int64_val [2 :int64 :required nil],
+           :fixed64_val [9 :fixed64 :required nil],
+           :float_val [16 :float :required nil],
+           :enum_val [8 "my.ns.enum/Enum" :required nil],
+           :double_val [11 :double :required nil],
+           :int32_val [1 :int32 :required nil],
+           :sfixed32_val [15 :sfixed32 :required nil]},
+          :decode
+          {7 [:bool_val :bool :required nil],
+           1 [:int32_val :int32 :required nil],
+           4 [:uint64_val :uint64 :required nil],
+           15 [:sfixed32_val :sfixed32 :required nil],
+           6 [:sint64_val :sint64 :required nil],
+           3 [:uint32_val :uint32 :required nil],
+           12 [:string_val :string :required nil],
+           2 [:int64_val :int64 :required nil],
+           11 [:double_val :double :required nil],
+           9 [:fixed64_val :fixed64 :required nil],
+           5 [:sint32_val :sint32 :required nil],
+           14 [:fixed32_val :fixed32 :required nil],
+           16 [:float_val :float :required nil],
+           10 [:sfixed64_val :sfixed64 :required nil],
+           8 [:enum_val "my.ns.enum/Enum" :required nil]}})))
+
+(deftest test-implicit
+  (is (= (codec-schema :my.ns.implicit/Implicit)
+         {:syntax :proto3,
+          :type :msg,
+          :encode
+          {:int32_val [1 :int32 nil nil],
+           :string_val [2 :string nil nil]}
+          :decode
+          {1 [:int32_val :int32 nil nil],
+           2 [:string_val :string nil nil]}}))
+  (is (= (codec-schema :my.ns.implicit/Implicit2)
+         {:syntax :proto3,
+          :type :msg,
+          :encode {:implicit [1 "my.ns.implicit/Implicit" nil nil]}
+          :decode {1 [:implicit "my.ns.implicit/Implicit" nil nil]}})))

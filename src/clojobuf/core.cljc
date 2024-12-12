@@ -2,7 +2,7 @@
   (:require [clojobuf.encode :refer [encode-msg]]
             [clojobuf.decode :refer [decode-msg]]
             [clojobuf.schema :refer [xform-ast vschemas-pb-types]]
-            [clojobuf.util :refer [dot-qualify]]
+            [clojobuf.util :as util]
             [malli.core :as m]
             [malli.error :as me]
             [malli.generator :as mg]
@@ -16,8 +16,8 @@
    msg-id:   message id with ns scope, e.g. :my.ns.scope/MsgA.MsgB
    msg:      message to be encoded"
   [registry msg-id msg]
-  (when (m/validate [:ref (dot-qualify msg-id)] msg (second registry))
-    (encode-msg (first registry)
+  (when (m/validate [:ref (util/dot-qualify msg-id)] msg (second registry))
+    (encode-msg registry
                 ((first registry) msg-id)
                 msg)))
 
@@ -27,19 +27,24 @@
    msg-id:   message id with ns scope, e.g. :my.ns.scope/MsgA.MsgB
    bin:      binary to be decoded"
   [registry msg-id bin]
-  (decode-msg (first registry)
+  (decode-msg registry
               ((first registry) msg-id)
               bin))
 
 (defn find-fault
   "Check msg against schema of msg-id in registry. Return a map of fault(s) found, or nil if no fault."
   [registry msg-id msg]
-  (-> (m/explain (dot-qualify msg-id) msg (second registry))
+  (-> (m/explain (util/dot-qualify msg-id) msg (second registry))
       (me/humanize)))
 
 (defn generate
   [registry msg-id]
-  (mg/generate [:ref (dot-qualify msg-id)] (second registry)))
+  (mg/generate [:ref (util/dot-qualify msg-id)] (second registry)))
+
+(defn fill-default
+  "Fill default values in msg, if any, and return the new msg."
+  [registry msg-id msg]
+  (util/fill-default registry msg-id msg))
 
 (defn ->complete-malli-schema
   "Add value schema to a composite registry. Return the new registry."

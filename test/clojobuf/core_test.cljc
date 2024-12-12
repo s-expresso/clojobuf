@@ -1,11 +1,16 @@
 (ns clojobuf.core-test
-  (:require [clojobuf.core :refer [encode decode find-fault generate ->malli-registry ->complete-malli-schema]]
+  (:require [clojobuf.core :refer [encode decode find-fault fill-default
+                                   ->malli-registry ->complete-malli-schema]]
             [clojobuf.macro :refer [protoc-macro]]
             [clojure.test :refer [is deftest run-tests]]))
 
 
 ; use protoc-macro as it has more possibilites of failing than protoc
-(def schemas (protoc-macro ["resources/protobuf/"] ["nested.proto", "no_package.proto", "extension.proto"]))
+(def schemas (protoc-macro ["resources/protobuf/"] ["nested.proto",
+                                                    "no_package.proto",
+                                                    "extension.proto"
+                                                    "required.proto",
+                                                    "implicit.proto"]))
 (def registry (let [[codec malli] schemas] [codec (->malli-registry malli)]))
 
 (def malli-schema (->complete-malli-schema (second schemas)))
@@ -194,4 +199,60 @@
   (rt :my.ns.extension/Extendable {:my.ns.extension/Msg1.double_val 1.0})
   (rt :my.ns.extension/Extendable {:my.ns.extension/string_val "abcd"}))
 
-;(run-tests)
+(deftest test-implicit-encode
+  (is (nil? (encode registry :my.ns.implicit/Implicit
+                    {})))
+  (is (= (alength (encode registry :my.ns.implicit/Implicit
+                          {:int32_val 0,
+                           :string_val ""}))
+         0)))
+
+(deftest test-implicit
+  #_(is (= (decode registry :my.ns.implicit/Implicit
+                   #?(:clj (byte-array 0))
+                   #?(:cljs (js/Uint8Array.)))
+           {:int32_val 0,
+            :string_val ""}))
+  (is (= (decode registry :my.ns.implicit/Implicit2
+                 #?(:clj (byte-array 0))
+                 #?(:cljs (js/Uint8Array.)))
+         {})))
+
+(def msg-required {:int32_val 0
+                   :int64_val 0
+                   :uint32_val 0
+                   :uint64_val 0
+                   :sint32_val 0
+                   :sint64_val 0
+                   :bool_val false
+                   :enum_val :MINUS_ONE
+                   :fixed64_val 0
+                   :sfixed64_val 0
+                   :double_val 0.0
+                   :string_val ""
+                   :fixed32_val 0
+                   :sfixed32_val 0
+                   :float_val 0.0})
+
+(deftest test-required
+  (is (nil? (encode registry :my.ns.required/Required
+                    {})))
+  (is (nil? (encode registry :my.ns.required/Required
+                    {:int32_val 1})))
+  (is (nil? (encode registry :my.ns.required/Required
+                    {:string_val "a"})))
+  (is (not (nil? (encode registry :my.ns.required/Required
+                         msg-required))))
+  (rt :my.ns.required/Required msg-required))
+
+#_(deftest test-fill-default
+  (is (= (fill-default registry :my.ns.required/Required {})
+          msg-required))
+  (is (= (fill-default registry :my.ns.required/NestedRequired {})
+         {:required
+           msg-required}))
+  (is (= (fill-default registry :my.ns.map/Mappy {})
+         {}))
+  (is (= (fill-default registry :my.ns.oneof/Either {})
+         {})))
+

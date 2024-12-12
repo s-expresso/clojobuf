@@ -1,4 +1,5 @@
-(ns clojobuf.util)
+(ns clojobuf.util
+  (:require [malli.core :as m][malli.transform :as mt]))
 
 (defn fid           [field-def] (nth field-def 0))
 (defn fname         [field-def] (nth field-def 0))
@@ -47,3 +48,32 @@
    we use :./Msg1 *internally* to make it fully qualified."
   [kw]
   (if (qualified-keyword? kw) kw (->> kw name (str "./") keyword)))
+
+(defn fill-default
+  ([registry msg-id]
+   (fill-default registry msg-id {}))
+  ([registry msg-id msg]
+   (let [vt (mt/default-value-transformer
+             {; ::mt/add-optional-keys true
+              :defaults {:string (constantly "")
+                         :boolean (constantly false)
+                         :int (constantly 0)
+                         :double (constantly 0.0)
+                         :ref (constantly {})
+                         }
+              ;; :default-fn (fn [k v]
+              ;;               (do (println "k is " k)
+              ;;                   (println "v is " v)
+              ;;                   (println "---------------------------------")
+              ;;                   (case k
+              ;;                     :string ""
+              ;;                     :boolean false
+              ;;                     :int 0
+              ;;                     :double 0
+              ;;                     :ref (m/decode [:ref v] {} (second registry) vt)
+              ;;                     nil)))
+              })]
+     (m/decode [:ref msg-id]
+               msg
+               (second registry)
+               vt))))

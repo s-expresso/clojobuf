@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package my.ns.implicit;
+
+message Implicit {
+    int32 int32_val       = 1;
+    string string_val     = 2;
+}
+
+message Implicit2 {
+    Implicit implicit = 1;
+}

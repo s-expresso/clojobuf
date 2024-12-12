@@ -1,8 +1,36 @@
 syntax = "proto2";
 
+import "enum.proto";
+
 package my.ns.required;
 
 message Required {
+        // wire-type 0
     required int32 int32_val       = 1;
-    required string string_val     = 2;
+    required int64 int64_val       = 2;
+    required uint32 uint32_val     = 3;
+    required uint64 uint64_val     = 4;
+    required sint32 sint32_val     = 5;
+    required sint64 sint64_val     = 6;
+    required bool bool_val         = 7;
+    required enum.Enum enum_val    = 8;
+    // wire-type 1
+    required fixed64 fixed64_val   = 9;
+    required sfixed64 sfixed64_val = 10;
+    required double double_val     = 11;
+    // wire-type 2
+    required string string_val     = 12;
+    // required bytes bytes_val    = 13;
+    // wire-type 5
+    required fixed32 fixed32_val   = 14;
+    required sfixed32 sfixed32_val = 15;    
+    required float float_val       = 16;
+}
+
+message NestedRequired {
+    required Required required     = 1;
+}
+
+message RequiredBytes {
+    required bytes bytes_val       = 1;
 }
