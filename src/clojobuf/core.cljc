@@ -1,7 +1,7 @@
 (ns clojobuf.core
   (:require [clojobuf.encode :refer [encode-msg]]
             [clojobuf.decode :refer [decode-msg]]
-            [clojobuf.schema :refer [xform-ast vschemas-pb-types]]
+            [clojobuf.schema :refer [xform-ast vschemas-pb-types vschemas-update-msg-field-presence]]
             [clojobuf.util :as util]
             [malli.core :as m]
             [malli.error :as me]
@@ -68,6 +68,7 @@
                 codec_malli_pairs (transduce (map (comp xform-ast val)) into [] rast)
                 codec             (transduce (map first)                into {} codec_malli_pairs)
                 malli             (transduce (map second)               into {} codec_malli_pairs)
+                malli             (vschemas-update-msg-field-presence malli)
                 malli (if auto-malli-registry
                         (->malli-registry malli)
                         malli)]

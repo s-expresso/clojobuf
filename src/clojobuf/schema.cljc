@@ -3,7 +3,8 @@
             [clojobuf.util :refer [dot-qualify]]
             [clojure.set :refer [map-invert]]
             [clojure.test.check.generators :as gen]
-            [malli.core :as m]))
+            [malli.core :as m]
+            [com.rpl.specter :as sp]))
 
 (defn- qualify-name [package name]
   (keyword (if (empty? package) name (str package "/" name))))
@@ -234,3 +235,42 @@
             :message (recur (inc idx) syntax                package     (conj reg (xform-msg syntax package form)))
             :enum    (recur (inc idx) syntax                package     (conj reg (xform-enm syntax package form)))
             (recur          (inc idx) syntax                package     reg))))))
+
+; ------------------ post-processing ---------------------------
+(defn vschemas-update-msg-field-presence
+  "Implicit message field presence needs to be interpeted as optional. Since
+   the referenced field can be an enum or a message, this is performed after
+   xform-ast as a separate step.
+
+   For example, the following input
+     {:my.ns/MsgA [:map
+                    {:closed true}
+                    [:enum_val [:ref :my.ns/Enum]]
+                    [:msg_val [:ref :my.ns/MsgB]]]
+      :my.ns/Enum [:enum :ZERO :ONE]
+      :my.ns/MsgB [:map
+                    {:closed true}
+                    [:field :int32]]}
+   will have
+     [:msg_val [:ref :my.ns/MsgB]]
+   updated to
+     [:msg_val {:optional true} [:ref :my.ns/MsgB]]"
+  [vschemas]
+  (let [inject-optional-property
+        (fn [form] (let [properties (if (= 2 (count form))
+                                       {:optional true}
+                                       (assoc (second form) :optional true))]
+                     [(first form) properties (last form)]))]
+    (sp/transform [sp/ALL-WITH-META
+                   (sp/nthpath 1)
+                   ; visit all elements of message (:map) type
+                   (sp/if-path #(= :map (first %)) sp/ALL-WITH-META)
+                   ; only visit implicit message field
+                   (sp/if-path vector? sp/STAY)                                    ; filter out non fields
+                   (sp/if-path #(-> % last vector?) sp/STAY)                       ; filter out primitive fields
+                   (sp/if-path #(or (= 2 (count %))
+                                    (nil? (get (second %) :optional))) sp/STAY)    ; filter out non implicit fields
+                   (sp/if-path #(= :ref (-> % last first)) sp/STAY)                ; filter out non :ref fields
+                   (sp/if-path #(= :map (-> % last last vschemas first)) sp/STAY)] ; filter out if referenced type is not message (i.e. enum)
+                  inject-optional-property
+                  vschemas)))

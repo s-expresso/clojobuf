@@ -2,6 +2,7 @@
   (:require #?(:clj [clojobuf.core :refer [protoc ->malli-registry]])
             #?(:cljs [clojobuf.nodejs :refer [protoc]])
             #?(:cljs [clojobuf.core :refer [->malli-registry]])
+            [clojobuf.schema :refer [vschemas-update-msg-field-presence]]
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]
@@ -356,3 +357,30 @@
                                                      [:int64_val {:optional true} :int64]
                                                      [:my.ns.extension/Msg1.double_val {:optional true} :double]
                                                      [:my.ns.extension/string_val {:optional true} :string]])))
+
+(deftest test-update-msg-field-presence
+  (let [base {:my.ns/Enum [:enum :ZERO :ONE]
+              :my.ns/MsgB [:map
+                           {:closed true}
+                           [:field :int32]]}]
+    (is (= (vschemas-update-msg-field-presence
+            (merge base {:my.ns/MsgA [:map {:closed true}
+                                      [:msg_val [:ref :my.ns/MsgB]]
+                                      [:enum_val [:ref :my.ns/Enum]]]}))
+           (merge base {:my.ns/MsgA [:map {:closed true}
+                                     [:msg_val {:optional true} [:ref :my.ns/MsgB]] ; updated
+                                     [:enum_val [:ref :my.ns/Enum]]]})))
+    (is (= (vschemas-update-msg-field-presence
+            (merge base {:my.ns/MsgA [:map {:closed true}
+                                      [:msg_val {} [:ref :my.ns/MsgB]]
+                                      [:enum_val [:ref :my.ns/Enum]]]}))
+           (merge base {:my.ns/MsgA [:map {:closed true}
+                                     [:msg_val {:optional true} [:ref :my.ns/MsgB]] ; updated
+                                     [:enum_val [:ref :my.ns/Enum]]]})))
+    (is (= (vschemas-update-msg-field-presence
+            (merge base {:my.ns/MsgA [:map {:closed true}
+                                      [:msg_val {:optional false} [:ref :my.ns/MsgB]]
+                                      [:enum_val [:ref :my.ns/Enum]]]}))
+           (merge base {:my.ns/MsgA [:map {:closed true}
+                                     [:msg_val {:optional false} [:ref :my.ns/MsgB]] ; no change
+                                     [:enum_val [:ref :my.ns/Enum]]]})))))
