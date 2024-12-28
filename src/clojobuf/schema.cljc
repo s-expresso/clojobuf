@@ -148,7 +148,8 @@
     :required [(keyword name) (get-malli-type typ)]
     :repeated [(keyword name) {:optional true} [:vector (get-malli-type typ)]]
     :optional [(keyword name) {:optional true} (get-malli-type typ)]
-    [(keyword name) (if (string? typ) {:optional true} {}) (get-malli-type typ)]))
+              [(keyword name) {:optional true
+                               :implicit true} (get-malli-type typ)]))
 
 (defn- vxform-map-field [[_ ktype vtype name field-id options]]
   [(keyword name) {:optional true} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
@@ -238,39 +239,46 @@
 
 ; ------------------ post-processing ---------------------------
 (defn vschemas-update-msg-field-presence
-  "Implicit message field presence needs to be interpeted as optional. Since
-   the referenced field can be an enum or a message, this is performed after
-   xform-ast as a separate step.
+  "Implicit message field presence needs to be interpeted as purely optional.
+   Since the referenced field can be an enum or a message, this is performed
+   after xform-ast as a separate step.
 
    For example, the following input
      {:my.ns/MsgA [:map
                     {:closed true}
-                    [:enum_val [:ref :my.ns/Enum]]
-                    [:msg_val [:ref :my.ns/MsgB]]]
+                    [:enum_val {:optional true
+                                :implicit true} [:ref :my.ns/Enum]]
+                    [:msg_val {:optional true
+                               :implicit true} [:ref :my.ns/MsgB]]]
       :my.ns/Enum [:enum :ZERO :ONE]
       :my.ns/MsgB [:map
                     {:closed true}
                     [:field :int32]]}
    will have
-     [:msg_val [:ref :my.ns/MsgB]]
+     [:msg_val {... :implicit true} [:ref :my.ns/MsgB]]
    updated to
-     [:msg_val {:optional true} [:ref :my.ns/MsgB]]"
+     [:msg_val {... :implicit false} [:ref :my.ns/MsgB]]"
   [vschemas]
-  (let [inject-optional-property
-        (fn [form] (let [properties (if (= 2 (count form))
-                                       {:optional true}
-                                       (assoc (second form) :optional true))]
+  (let [update-implicit-property
+        (fn [form] (let [properties (dissoc (second form) :implicit)]
                      [(first form) properties (last form)]))]
     (sp/transform [sp/ALL-WITH-META
                    (sp/nthpath 1)
                    ; visit all elements of message (:map) type
                    (sp/if-path #(= :map (first %)) sp/ALL-WITH-META)
                    ; only visit implicit message field
-                   (sp/if-path vector? sp/STAY)                                    ; filter out non fields
-                   (sp/if-path #(-> % last vector?) sp/STAY)                       ; filter out primitive fields
-                   (sp/if-path #(or (= 2 (count %))
-                                    (nil? (get (second %) :optional))) sp/STAY)    ; filter out non implicit fields
-                   (sp/if-path #(= :ref (-> % last first)) sp/STAY)                ; filter out non :ref fields
-                   (sp/if-path #(= :map (-> % last last vschemas first)) sp/STAY)] ; filter out if referenced type is not message (i.e. enum)
-                  inject-optional-property
+                   (sp/if-path vector? sp/STAY)                                        ; filter out non fields
+                   (sp/if-path #(-> % last vector?) sp/STAY)                           ; filter out primitive fields
+                   (sp/if-path #(= 3 (count %)) sp/STAY)                               ; filter out required fields which are w/o property
+                   
+                   (sp/if-path #(true? (get (second %) :implicit)) sp/STAY)            ; filter out non implicit fields
+                   (sp/if-path #(= :ref (-> % last first)) sp/STAY)                    ; filter out non :ref fields
+                   (sp/if-path #(not= :enum (-> % last last vschemas first)) sp/STAY)] ; filter out if referenced type is :enum (other possibiilities :map & :and)
+                  update-implicit-property
                   vschemas)))
+
+
+(vschemas-update-msg-field-presence {:a/b [:map 
+                                           {:closed true}
+                                           [:either {:optional true, :implicit true}
+                                            [:ref :my.ns.oneof/Either]]]})

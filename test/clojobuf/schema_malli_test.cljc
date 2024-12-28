@@ -46,7 +46,8 @@
   (is (= (malli-schema :my.ns.nested/Msg1)
          [:map
           {:closed true}
-          [:enum {:optional true} [:ref :my.ns.enum/Enum]]
+          [:enum {:optional true
+                  :implicit true} [:ref :my.ns.enum/Enum]]
           [:nested2 {:optional true} [:ref :my.ns.nested/Msg1.Msg2]]
           [:nested3 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
           [:nested4 {:optional true} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
@@ -225,11 +226,13 @@
 (deftest test-schema-malli-implicit
   (is (= (malli-schema :my.ns.implicit/Implicit) [:map
                                                   {:closed true}
-                                                  [:int32_val {} :int32]
-                                                  [:string_val {} :string]]))
-  (is (false? (m/validate [:ref :my.ns.implicit/Implicit] {} registry)))
-  (is (false? (m/validate [:ref :my.ns.implicit/Implicit] {:int32_val 0} registry)))
-  (is (false? (m/validate [:ref :my.ns.implicit/Implicit] {:string_val ""} registry)))
+                                                  [:int32_val {:optional true
+                                                               :implicit true} :int32]
+                                                  [:string_val {:optional true
+                                                                :implicit true} :string]]))
+  (is (true? (m/validate [:ref :my.ns.implicit/Implicit] {} registry)))
+  (is (true? (m/validate [:ref :my.ns.implicit/Implicit] {:int32_val 0} registry)))
+  (is (true? (m/validate [:ref :my.ns.implicit/Implicit] {:string_val ""} registry)))
   (is (true? (m/validate [:ref :my.ns.implicit/Implicit] {:int32_val 0
                                                           :string_val ""} registry))))
 
@@ -365,22 +368,35 @@
                            [:field :int32]]}]
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
-                                      [:msg_val [:ref :my.ns/MsgB]]
+                                      [:msg_val {:optional true
+                                                 :implicit true}[:ref :my.ns/MsgB]]   ; :implicit true
                                       [:enum_val [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
-                                     [:msg_val {:optional true} [:ref :my.ns/MsgB]] ; updated
+                                     [:msg_val {:optional true} [:ref :my.ns/MsgB]]   ; removed :implicit
                                      [:enum_val [:ref :my.ns/Enum]]]})))
+    
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
-                                      [:msg_val {} [:ref :my.ns/MsgB]]
+                                      [:msg_val {:optional true
+                                                 :implicit false}[:ref :my.ns/MsgB]]  ; :implicit false
                                       [:enum_val [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
-                                     [:msg_val {:optional true} [:ref :my.ns/MsgB]] ; updated
-                                     [:enum_val [:ref :my.ns/Enum]]]})))
+                                     [:msg_val {:optional true
+                                                :implicit false} [:ref :my.ns/MsgB]]  ; no change
+                                     [:enum_val [:ref :my.ns/Enum]]]}))) 
+    
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
-                                      [:msg_val {:optional false} [:ref :my.ns/MsgB]]
+                                      [:msg_val {:optional false} [:ref :my.ns/MsgB]] ; no :implicit
                                       [:enum_val [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
-                                     [:msg_val {:optional false} [:ref :my.ns/MsgB]] ; no change
+                                     [:msg_val {:optional false} [:ref :my.ns/MsgB]]  ; no change
+                                     [:enum_val [:ref :my.ns/Enum]]]})))
+    
+    (is (= (vschemas-update-msg-field-presence
+            (merge base {:my.ns/MsgA [:map {:closed true}
+                                      [:msg_val {} [:ref :my.ns/MsgB]]                ; empty property
+                                      [:enum_val [:ref :my.ns/Enum]]]}))
+           (merge base {:my.ns/MsgA [:map {:closed true}
+                                     [:msg_val {} [:ref :my.ns/MsgB]]                 ; no change
                                      [:enum_val [:ref :my.ns/Enum]]]})))))

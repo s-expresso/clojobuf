@@ -200,8 +200,9 @@
   (rt :my.ns.extension/Extendable {:my.ns.extension/string_val "abcd"}))
 
 (deftest test-implicit-encode
-  (is (nil? (encode registry :my.ns.implicit/Implicit
-                    {})))
+  (is (= (alength (encode registry :my.ns.implicit/Implicit
+                          {}))
+         0))
   (is (= (alength (encode registry :my.ns.implicit/Implicit
                           {:int32_val 0,
                            :string_val ""}))
