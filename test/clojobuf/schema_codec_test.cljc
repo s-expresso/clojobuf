@@ -4,10 +4,11 @@
             [clojure.test :refer [is deftest run-tests]]))
 
 (def codec_malli (protoc ["resources/protobuf/"] ["nested.proto",
-                                                  "no_package.proto", 
-                                                  "extension.proto", 
-                                                  "required.proto", 
-                                                  "implicit.proto"]))
+                                                  "no_package.proto",
+                                                  "extension.proto",
+                                                  "required.proto",
+                                                  "implicit.proto",
+                                                  "override.proto"]))
 (def codec-schema (first codec_malli))
 
 (deftest test-schema-codec-enum
@@ -293,6 +294,45 @@
            16 [:float_val :float :optional nil],
            10 [:sfixed64_val :sfixed64 :optional nil],
            8 [:enum_val "my.ns.enum/Enum" :optional nil]}})))
+
+(deftest test-schema-codec-override-default
+  (is (= (codec-schema :my.ns.override/Override)
+         {:syntax :proto2,
+          :type :msg,
+          :encode
+          {:string_val [12 :string :optional [["default" "50"]]],
+           :fixed32_val [14 :fixed32 :optional [["default" 51]]],
+           :sint32_val [5 :sint32 :optional [["default" 45]]],
+           :sfixed64_val [10 :sfixed64 :optional [["default" 48]]],
+           :bytes_val [13 :bytes :optional nil],
+           :uint32_val [3 :uint32 :optional [["default" 43]]],
+           :sint64_val [6 :sint64 :optional [["default" 46]]],
+           :bool_val [7 :bool :optional [["default" :true]]],
+           :uint64_val [4 :uint64 :optional [["default" 44]]],
+           :int64_val [2 :int64 :optional [["default" 42]]],
+           :fixed64_val [9 :fixed64 :optional [["default" 47]]],
+           :float_val [16 :float :optional [["default" 53.0]]],
+           :enum_val [8 "my.ns.enum/Enum" :optional [["default" :TWO]]],
+           :double_val [11 :double :optional [["default" 49.0]]],
+           :int32_val [1 :int32 :optional [["default" 41]]],
+           :sfixed32_val [15 :sfixed32 :optional [["default" 52]]]},
+          :decode
+          {7 [:bool_val :bool :optional [["default" :true]]],
+           1 [:int32_val :int32 :optional [["default" 41]]],
+           4 [:uint64_val :uint64 :optional [["default" 44]]],
+           15 [:sfixed32_val :sfixed32 :optional [["default" 52]]],
+           13 [:bytes_val :bytes :optional nil],
+           6 [:sint64_val :sint64 :optional [["default" 46]]],
+           3 [:uint32_val :uint32 :optional [["default" 43]]],
+           12 [:string_val :string :optional [["default" "50"]]],
+           2 [:int64_val :int64 :optional [["default" 42]]],
+           11 [:double_val :double :optional [["default" 49.0]]],
+           9 [:fixed64_val :fixed64 :optional [["default" 47]]],
+           5 [:sint32_val :sint32 :optional [["default" 45]]],
+           14 [:fixed32_val :fixed32 :optional [["default" 51]]],
+           16 [:float_val :float :optional [["default" 53.0]]],
+           10 [:sfixed64_val :sfixed64 :optional [["default" 48]]],
+           8 [:enum_val "my.ns.enum/Enum" :optional [["default" :TWO]]]}})))
 
 (deftest test-schema-codec-no-package
   (is (= (codec-schema :Msg1) {:syntax :proto2,
