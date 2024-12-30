@@ -145,17 +145,21 @@
 
 (defn- vxform-field [[_ rori typ name field-id options]]
   (condp = rori
-    :required [(keyword name) (get-malli-type typ)]
-    :repeated [(keyword name) {:optional true} [:vector (get-malli-type typ)]]
-    :optional [(keyword name) {:optional true} (get-malli-type typ)]
+    :required [(keyword name) {:presence :required}(get-malli-type typ)]
+    :repeated [(keyword name) {:optional true
+                               :presence :repeated} [:vector (get-malli-type typ)]]
+    :optional [(keyword name) {:optional true
+                               :presence :optional} (get-malli-type typ)]
               [(keyword name) {:optional true
-                               :implicit true} (get-malli-type typ)]))
+                               :presence :implicit} (get-malli-type typ)]))
 
 (defn- vxform-map-field [[_ ktype vtype name field-id options]]
-  [(keyword name) {:optional true} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
+  [(keyword name) {:optional true
+                   :presence :map} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
 
 (defn- vxform-oneof-field [[_ typ name field-id options]]
-  [(keyword name) {:optional true} (get-malli-type typ)])
+  [(keyword name) {:optional true
+                   :presence :oneof-field} (get-malli-type typ)])
 
 (defn- vxform-oneof
   "[:oneof 'either'
@@ -170,7 +174,8 @@
   (let [oneof-key (keyword name)
         targets (map #(keyword (nth % 2)) forms)]
     [(into
-      [[oneof-key {:optional true} (into [:enum] targets)]]
+      [[oneof-key {:optional true
+                   :presence :oneof} (into [:enum] targets)]]
       (map vxform-oneof-field forms))
      [:oneof oneof-key (into [] targets)]]))
 
@@ -247,20 +252,20 @@
      {:my.ns/MsgA [:map
                     {:closed true}
                     [:enum_val {:optional true
-                                :implicit true} [:ref :my.ns/Enum]]
+                                :presence :implicit} [:ref :my.ns/Enum]]
                     [:msg_val {:optional true
-                               :implicit true} [:ref :my.ns/MsgB]]]
+                               :presence :implicit} [:ref :my.ns/MsgB]]]
       :my.ns/Enum [:enum :ZERO :ONE]
       :my.ns/MsgB [:map
                     {:closed true}
                     [:field :int32]]}
    will have
-     [:msg_val {... :implicit true} [:ref :my.ns/MsgB]]
+     [:msg_val {... :presence :implicit} [:ref :my.ns/MsgB]]
    updated to
-     [:msg_val {... :implicit false} [:ref :my.ns/MsgB]]"
+     [:msg_val {... :presence :optional} [:ref :my.ns/MsgB]]"
   [vschemas]
   (let [update-implicit-property
-        (fn [form] (let [properties (dissoc (second form) :implicit)]
+        (fn [form] (let [properties (assoc (second form) :presence :optional)]
                      [(first form) properties (last form)]))]
     (sp/transform [sp/ALL-WITH-META
                    (sp/nthpath 1)
@@ -271,14 +276,8 @@
                    (sp/if-path #(-> % last vector?) sp/STAY)                           ; filter out primitive fields
                    (sp/if-path #(= 3 (count %)) sp/STAY)                               ; filter out required fields which are w/o property
                    
-                   (sp/if-path #(true? (get (second %) :implicit)) sp/STAY)            ; filter out non implicit fields
+                   (sp/if-path #(= :implicit (get (second %) :presence)) sp/STAY)            ; filter out non implicit fields
                    (sp/if-path #(= :ref (-> % last first)) sp/STAY)                    ; filter out non :ref fields
                    (sp/if-path #(not= :enum (-> % last last vschemas first)) sp/STAY)] ; filter out if referenced type is :enum (other possibiilities :map & :and)
                   update-implicit-property
                   vschemas)))
-
-
-(vschemas-update-msg-field-presence {:a/b [:map 
-                                           {:closed true}
-                                           [:either {:optional true, :implicit true}
-                                            [:ref :my.ns.oneof/Either]]]})
