@@ -1,6 +1,6 @@
 (ns clojobuf.schema
   (:require [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
-            [clojobuf.util :refer [dot-qualify]]
+            [clojobuf.util :refer [dot-qualify default-opt]]
             [clojure.set :refer [map-invert]]
             [clojure.test.check.generators :as gen]
             [malli.core :as m]
@@ -143,21 +143,26 @@
     #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double :bytes} typ)
     :else typ))
 
-(defn- vxform-field [[_ rori typ name field-id options]]
-  (condp = rori
-    :required [(keyword name) {:presence :required}(get-malli-type typ)]
-    :repeated [(keyword name) {:optional true
-                               :presence :repeated} [:vector (get-malli-type typ)]]
-    :optional [(keyword name) {:optional true
-                               :presence :optional} (get-malli-type typ)]
+(defn- vxform-field [syntax [_ rori typ name field-id options]]
+  (let [out (condp = rori
+              :required [(keyword name) {:presence :required} (get-malli-type typ)]
+              :repeated [(keyword name) {:optional true
+                                         :presence :repeated} [:vector (get-malli-type typ)]]
+              :optional [(keyword name) {:optional true
+                                         :presence :optional} (get-malli-type typ)] 
               [(keyword name) {:optional true
-                               :presence :implicit} (get-malli-type typ)]))
+                               :presence :implicit} (get-malli-type typ)])] 
+    (if-let [default (when (and (= rori :optional)
+                                (not= syntax 3)) ; proto3 doesn't allow overriding of default value
+                       (default-opt options))]
+      [(first out) (assoc (second out) :default default) (last out)]
+      out)))
 
-(defn- vxform-map-field [[_ ktype vtype name field-id options]]
+(defn- vxform-map-field [syntax [_ ktype vtype name field-id options]]
   [(keyword name) {:optional true
                    :presence :map} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
 
-(defn- vxform-oneof-field [[_ typ name field-id options]]
+(defn- vxform-oneof-field [syntax [_ typ name field-id options]]
   [(keyword name) {:optional true
                    :presence :oneof-field} (get-malli-type typ)])
 
@@ -170,26 +175,26 @@
       [:name string?]
       [:msg [:ref :Msg]]]
      [:oneof :either [:name :msg]] ]"
-  [[_ name & forms]]
+  [syntax [_ name & forms]]
   (let [oneof-key (keyword name)
         targets (map #(keyword (nth % 2)) forms)]
     [(into
       [[oneof-key {:optional true
                    :presence :oneof} (into [:enum] targets)]]
-      (map vxform-oneof-field forms))
+      (map #(vxform-oneof-field syntax %) forms))
      [:oneof oneof-key (into [] targets)]]))
 
 (defn- vld-msg-children-processor
   "msg-children are child nodes within message; each can be :field, :mapField, :oneof or :option."
-  [msg-children]
+  [syntax msg-children]
   (loop [idx 0, main [:map {:closed true}], funcs []]
     (if (< idx (count msg-children))
       (let [msg-child (nth msg-children idx)]
         (condp = (first msg-child)
-          :field    (recur (inc idx), (conj main (vxform-field msg-child)),     funcs)
-          :field+   (recur (inc idx), (conj main (vxform-field msg-child)),     funcs)
-          :mapField (recur (inc idx), (conj main (vxform-map-field msg-child)), funcs)
-          :oneof (let [[m f] (vxform-oneof msg-child)]
+          :field    (recur (inc idx), (conj main (vxform-field syntax msg-child)),     funcs)
+          :field+   (recur (inc idx), (conj main (vxform-field syntax msg-child)),     funcs)
+          :mapField (recur (inc idx), (conj main (vxform-map-field syntax msg-child)), funcs)
+          :oneof (let [[m f] (vxform-oneof syntax msg-child)]
                    (recur (inc idx), (into main m) (conj funcs f)))
           (recur (inc idx) main funcs)))
       (if (empty? funcs)
@@ -201,7 +206,7 @@
   (let [fullname (qualify-name package (second form))
         ->bin (reduce fwd-msg-child-reducer {} (drop 2 form))
         <-bin (reduce bwd-msg-child-reducer {} (drop 2 form))
-        validator (vld-msg-children-processor (drop 2 form))]
+        validator (vld-msg-children-processor syntax (drop 2 form))]
     [{fullname {:syntax syntax :type :msg :encode ->bin :decode <-bin}}
      {(dot-qualify fullname) validator}]))
 
