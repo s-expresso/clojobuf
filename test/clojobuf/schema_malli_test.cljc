@@ -387,32 +387,74 @@
                            [:field :int32]]}]
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
-                                      [:msg_val {:optional true :presence :implicit}[:ref :my.ns/MsgB]] ; :implicit
-                                      [:enum_val [:ref :my.ns/Enum]]]}))
+                                      [:msg_val {:optional true :presence :implicit} [:ref :my.ns/MsgB]] ; :implicit
+                                      [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
                                      [:msg_val {:optional true :presence :optional} [:ref :my.ns/MsgB]] ; becomes :optional
-                                     [:enum_val [:ref :my.ns/Enum]]]})))
+                                     [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]})))
     
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
                                       [:msg_val {:optional true :presence :optional}[:ref :my.ns/MsgB]] ; opitonal
-                                      [:enum_val [:ref :my.ns/Enum]]]}))
+                                      [:enum_val {:optional true :presence :optional} [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
                                      [:msg_val {:optional true :presence :optional} [:ref :my.ns/MsgB]]  ; no change
-                                     [:enum_val [:ref :my.ns/Enum]]]}))) 
+                                     [:enum_val {:optional true :presence :optional} [:ref :my.ns/Enum]]]}))) 
     
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
                                       [:msg_val {:optional false :presence :required} [:ref :my.ns/MsgB]] ; required
-                                      [:enum_val [:ref :my.ns/Enum]]]}))
+                                      [:enum_val {:optional false :presence :required} [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
                                      [:msg_val {:optional false :presence :required} [:ref :my.ns/MsgB]]  ; no change
-                                     [:enum_val [:ref :my.ns/Enum]]]})))
+                                     [:enum_val {:optional false :presence :required} [:ref :my.ns/Enum]]]})))
     
     (is (= (vschemas-update-msg-field-presence
             (merge base {:my.ns/MsgA [:map {:closed true}
                                       [:msg_val {} [:ref :my.ns/MsgB]]                ; empty property
-                                      [:enum_val [:ref :my.ns/Enum]]]}))
+                                      [:enum_val {} [:ref :my.ns/Enum]]]}))
            (merge base {:my.ns/MsgA [:map {:closed true}
                                      [:msg_val {} [:ref :my.ns/MsgB]]                 ; no change
-                                     [:enum_val [:ref :my.ns/Enum]]]})))))
+                                     [:enum_val {} [:ref :my.ns/Enum]]]})))))
+
+(deftest test-update-msg-with-oneof-field-presence
+  (is (= (vschemas-update-msg-field-presence {:my.ns/Enum [:enum :ZERO :ONE]
+                                              :my.ns/MsgA [:and
+                                                           [:map
+                                                            {:closed true}
+                                                            [:either
+                                                             {:optional true :presence :oneof}
+                                                             [:enum
+                                                              :int32_val
+                                                              :int64_val]]
+                                                            [:int32_val {:optional true :presence :oneof-field} :int32]
+                                                            [:int64_val {:optional true :presence :oneof-field} :int64]
+                                                            [:msg_val {:optional true :presence :implicit} [:ref :my.ns/MsgB]] ; implicit
+                                                            [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]
+                                                           [:oneof
+                                                            :either
+                                                            [:int32_val
+                                                             :int64_val]]]
+                                              :my.ns/MsgB [:map
+                                                           {:closed true}
+                                                           [:field :int32]]})
+         {:my.ns/Enum [:enum :ZERO :ONE]
+          :my.ns/MsgA [:and
+                       [:map
+                        {:closed true}
+                        [:either
+                         {:optional true :presence :oneof}
+                         [:enum
+                          :int32_val
+                          :int64_val]]
+                        [:int32_val {:optional true :presence :oneof-field} :int32]
+                        [:int64_val {:optional true :presence :oneof-field} :int64]
+                        [:msg_val {:optional true :presence :optional} [:ref :my.ns/MsgB]] ; becomes: optional
+                        [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]
+                       [:oneof
+                        :either
+                        [:int32_val
+                         :int64_val]]]
+          :my.ns/MsgB [:map
+                       {:closed true}
+                       [:field :int32]]})))

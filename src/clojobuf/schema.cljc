@@ -275,14 +275,18 @@
     (sp/transform [sp/ALL-WITH-META
                    (sp/nthpath 1)
                    ; visit all elements of message (:map) type
-                   (sp/if-path #(= :map (first %)) sp/ALL-WITH-META)
+                   (sp/cond-path #(= :map (first %)) sp/ALL-WITH-META
+                                 #(and (= :and (-> % first)) ; if message contains oneof, top level is [:and [:map ...] ...]
+                                       (= :map (-> % second first))) [(sp/nthpath 1) sp/ALL-WITH-META])
+
                    ; only visit implicit message field
                    (sp/if-path vector? sp/STAY)                                        ; filter out non fields
                    (sp/if-path #(-> % last vector?) sp/STAY)                           ; filter out primitive fields
                    (sp/if-path #(= 3 (count %)) sp/STAY)                               ; filter out required fields which are w/o property
                    
-                   (sp/if-path #(= :implicit (get (second %) :presence)) sp/STAY)            ; filter out non implicit fields
+                   (sp/if-path #(= :implicit (get (second %) :presence)) sp/STAY)      ; filter out non implicit fields
                    (sp/if-path #(= :ref (-> % last first)) sp/STAY)                    ; filter out non :ref fields
                    (sp/if-path #(not= :enum (-> % last last vschemas first)) sp/STAY)] ; filter out if referenced type is :enum (other possibiilities :map & :and)
                   update-implicit-property
                   vschemas)))
+
