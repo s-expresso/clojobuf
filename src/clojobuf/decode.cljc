@@ -19,6 +19,18 @@
 
 (declare decode-msg)
 
+(defn- read-pri-f2d
+  "read-pri and covert float to double"
+  [reader pri-type]
+  (let [val (read-pri reader pri-type)]
+    (if (= pri-type :float) (double val) val)))
+
+(defn- read-packed-f2d
+  "read-packed and covert float to double"
+  [reader pri-type]
+  (let [vals (read-packed reader pri-type)]
+    (if (= pri-type :float) (map double vals) vals)))
+
 (defn decode-priField
   "Return a name/value pair like [:name 123] or [:name [123 456 789]], or return
    field-id/wire-value pair like [7 123] or [7 <binary>]) if field's primitive
@@ -28,10 +40,10 @@
     (cond
       ; expected wire-type
       (wt-pt-compatible? wire-type pri-type)
-      [(fname field-schema) (read-pri reader pri-type)]
+      [(fname field-schema) (read-pri-f2d reader pri-type)]
       ; packed
       (= wire-type 2)
-      [(fname field-schema) (read-packed reader pri-type)]
+      [(fname field-schema) (read-packed-f2d reader pri-type)]
       ; unexpected wire-type
       :else (do
               (println "unexpected")

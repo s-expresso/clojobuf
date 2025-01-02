@@ -144,13 +144,21 @@
     #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double :bytes} typ)
     :else typ))
 
+(defn- get-opt-malli-type [typ]
+  (cond
+    (string? typ) [:maybe [:ref (dot-qualify (keyword typ))]]
+    (= typ :float) [:maybe :double] ; TODO is this correct?
+    (= typ :bool) [:maybe :boolean]
+    #_(#{:int32 :uint32 :sint32 :int64 :uint64 :sint64 :fixed32 :fixed64 :sfixed32 :sfixed64 :string :double :bytes} typ)
+    :else [:maybe typ]))
+
 (defn- vxform-field [syntax [_ rori typ name field-id options]]
   (let [out (condp = rori
               :required [(keyword name) {:presence :required} (get-malli-type typ)]
               :repeated [(keyword name) {:optional true
                                          :presence :repeated} [:vector (get-malli-type typ)]]
               :optional [(keyword name) {:optional true
-                                         :presence :optional} (get-malli-type typ)] 
+                                         :presence :optional} (get-opt-malli-type typ)] 
               [(keyword name) {:optional true
                                :presence :implicit} (get-malli-type typ)])] 
     (if-let [default (when (and (= rori :optional)
@@ -161,11 +169,11 @@
 
 (defn- vxform-map-field [syntax [_ ktype vtype name field-id options]]
   [(keyword name) {:optional true
-                   :presence :map} [:map-of (get-malli-type ktype) (get-malli-type vtype)]])
+                   :presence :map} [:maybe [:map-of (get-malli-type ktype) (get-malli-type vtype)]]])
 
 (defn- vxform-oneof-field [syntax [_ typ name field-id options]]
   [(keyword name) {:optional true
-                   :presence :oneof-field} (get-malli-type typ)])
+                   :presence :oneof-field} (get-opt-malli-type typ)])
 
 (defn- vxform-oneof
   "[:oneof 'either'
@@ -188,7 +196,8 @@
 (defn- vld-msg-children-processor
   "msg-children are child nodes within message; each can be :field, :mapField, :oneof or :option."
   [syntax msg-children]
-  (loop [idx 0, main [:map {:closed true}], funcs []]
+  ; :? can be injected during decoding, hence validation schema has a generic entry to ignore it
+  (loop [idx 0, main [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]], funcs []]
     (if (< idx (count msg-children))
       (let [msg-child (nth msg-children idx)]
         (condp = (first msg-child)
@@ -303,7 +312,9 @@
                         (let [presence ((second field-schema-maybe) :presence)]
                           (cond
                             (contains? #{:implicit :required} presence)
-                            (let [typ (nth field-schema-maybe 2)]
+                            (let [typ (nth field-schema-maybe 2)
+                                  ; TODO implicit field shouldn't have :maybe prepended, hence no need to strip
+                                  typ (if (and (vector? typ) (= :maybe (first typ))) (second typ) typ)]
                               (cond
                                 (= :bytes typ) #?(:clj (byte-array 0)
                                                   :cljs (js/Uint8Array.))
@@ -313,13 +324,12 @@
                                             ; only handle enum because implicit message is actually optional
                                             ; and we do not (may revisit?) support default value for message
                                                 (when (= :enum (first schema)) (second schema)))))
-                            
                             (= :optional presence) nil
                             (= :repeated presence) []
                             (= :map presence) {}
-                            (= :oneof presence) :-silent-
-                            (= :oneof-field presence) :-silent-
-                            :else :-silent-)) ; shouldn't reach here
+                            (= :oneof presence) nil
+                            (= :oneof-field presence) nil
+                            :else :-silent-)) ; reachable by :?
                         :-silent-))
         xform-msg (fn [form]
                     ; form example:

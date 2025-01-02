@@ -17,6 +17,9 @@
 (def malli-schema (second codec_malli))
 (def registry (->malli-registry malli-schema))
 
+(deftest test-schema-:?
+  (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:? [[1 2 3]]} registry))))
+
 (deftest test-schema-malli-enum
   (is (= (malli-schema :my.ns.enum/Enum)
          [:enum :MINUS_ONE :ZERO :ONE :TWO :THREE :FOUR :FIVE]))
@@ -30,13 +33,13 @@
 (deftest test-schema-malli-map
   (is (= (malli-schema :my.ns.map/Mappy)
          [:map
-          {:closed true}
-          [:uint32_sint64 {:optional true :presence :map} [:map-of :uint32 :sint64]]
-          [:int64_string {:optional true :presence :map} [:map-of :int64 :string]]
-          [:fixed32_double {:optional true :presence :map} [:map-of :fixed32 :double]]
-          [:sfixed64_enum {:optional true :presence :map} [:map-of :sfixed64 [:ref :my.ns.enum/Enum]]]
-          [:sint64_singular {:optional true :presence :map} [:map-of :sint64 [:ref :my.ns.singular/Singular]]]
-          [:uint64_packed {:optional true :presence :map} [:map-of :uint64 [:ref :my.ns.packed/Packed]]]]))
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
+          [:uint32_sint64 {:optional true :presence :map} [:maybe [:map-of :uint32 :sint64]]]
+          [:int64_string {:optional true :presence :map} [:maybe [:map-of :int64 :string]]]
+          [:fixed32_double {:optional true :presence :map} [:maybe [:map-of :fixed32 :double]]]
+          [:sfixed64_enum {:optional true :presence :map} [:maybe [:map-of :sfixed64 [:ref :my.ns.enum/Enum]]]]
+          [:sint64_singular {:optional true :presence :map} [:maybe [:map-of :sint64 [:ref :my.ns.singular/Singular]]]]
+          [:uint64_packed {:optional true :presence :map} [:maybe [:map-of :uint64 [:ref :my.ns.packed/Packed]]]]]))
   (is (true?  (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {0 0, 1 -1, 2 2, 3 -3}} registry)))
   (is (false? (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {1 1.234}} registry)))
   (is (false? (m/validate [:ref :my.ns.map/Mappy] {:uint32_sint64 {1.234 0}} registry)))
@@ -45,7 +48,7 @@
 (deftest test-schema-malli-nested
   (is (= (malli-schema :my.ns.nested/Msg1)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:enum {:optional true :presence :implicit} [:ref :my.ns.enum/Enum]]
           [:nested2 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2]]
           [:nested3 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
@@ -56,32 +59,32 @@
           [:nested5c {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:singular {:optional true :presence :optional} [:ref :my.ns.singular/Singular]]
           [:nested3 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3]]
           [:nested4 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
           [:nested5 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2.Msg3)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:packed {:optional true :presence :optional} [:ref :my.ns.packed/Packed]]
           [:repeat {:optional true :presence :optional} [:ref :my.ns.repeat/Repeat]]
           [:nested4 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4]]
           [:nested5 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2.Msg3.Msg4)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:mappy {:optional true :presence :optional} [:ref :my.ns.map/Mappy]]
           [:nested5 {:optional true :presence :optional} [:ref :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5]]]))
   (is (= (malli-schema :my.ns.nested/Msg1.Msg2.Msg3.Msg4.Msg5)
-         [:map {:closed true} [:either {:optional true, :presence :optional} [:ref :my.ns.oneof/Either]]])))
+         [:map {:closed true} [:? {:optional true :presence :? :default nil} :any] [:either {:optional true, :presence :optional} [:ref :my.ns.oneof/Either]]])))
 
 ; TODO compare dynamic function at end of form (currently bypassed with drop-last)
 (deftest test-schema-malli-oneof
   (is (= (malli-schema :my.ns.oneof/Either)
          [:and
           [:map
-           {:closed true}
+           {:closed true} [:? {:optional true :presence :? :default nil} :any]
            [:either
             {:optional true :presence :oneof}
             [:enum
@@ -105,26 +108,26 @@
              :packed_msg
              :msg_1
              :msg_a]]
-           [:int32_val {:optional true :presence :oneof-field} :int32]
-           [:int64_val {:optional true :presence :oneof-field} :int64]
-           [:uint32_val {:optional true :presence :oneof-field} :uint32]
-           [:uint64_val {:optional true :presence :oneof-field} :uint64]
-           [:sint32_val {:optional true :presence :oneof-field} :sint32]
-           [:sint64_val {:optional true :presence :oneof-field} :sint64]
-           [:bool_val {:optional true :presence :oneof-field} :boolean]
-           [:enum_val {:optional true :presence :oneof-field} [:ref :my.ns.enum/Enum]]
-           [:fixed64_val {:optional true :presence :oneof-field} :fixed64]
-           [:sfixed64_val {:optional true :presence :oneof-field} :sfixed64]
-           [:double_val {:optional true :presence :oneof-field} :double]
-           [:string_val {:optional true :presence :oneof-field} :string]
-           [:bytes_val {:optional true :presence :oneof-field} :bytes]
-           [:fixed32_val {:optional true :presence :oneof-field} :fixed32]
-           [:sfixed32_val {:optional true :presence :oneof-field} :sfixed32]
-           [:float_val {:optional true :presence :oneof-field} :double]
-           [:singular_msg {:optional true :presence :oneof-field} [:ref :my.ns.singular/Singular]]
-           [:packed_msg {:optional true :presence :oneof-field} [:ref :my.ns.packed/Packed]]
-           [:msg_1 {:optional true :presence :oneof-field} [:ref :./Msg1]]
-           [:msg_a {:optional true :presence :oneof-field} [:ref :./MsgA]]]
+           [:int32_val {:optional true :presence :oneof-field} [:maybe :int32]]
+           [:int64_val {:optional true :presence :oneof-field} [:maybe :int64]]
+           [:uint32_val {:optional true :presence :oneof-field} [:maybe :uint32]]
+           [:uint64_val {:optional true :presence :oneof-field} [:maybe :uint64]]
+           [:sint32_val {:optional true :presence :oneof-field} [:maybe :sint32]]
+           [:sint64_val {:optional true :presence :oneof-field} [:maybe :sint64]]
+           [:bool_val {:optional true :presence :oneof-field} [:maybe :boolean]]
+           [:enum_val {:optional true :presence :oneof-field} [:maybe [:ref :my.ns.enum/Enum]]]
+           [:fixed64_val {:optional true :presence :oneof-field} [:maybe :fixed64]]
+           [:sfixed64_val {:optional true :presence :oneof-field} [:maybe :sfixed64]]
+           [:double_val {:optional true :presence :oneof-field} [:maybe :double]]
+           [:string_val {:optional true :presence :oneof-field} [:maybe :string]]
+           [:bytes_val {:optional true :presence :oneof-field} [:maybe :bytes]]
+           [:fixed32_val {:optional true :presence :oneof-field} [:maybe :fixed32]]
+           [:sfixed32_val {:optional true :presence :oneof-field} [:maybe :sfixed32]]
+           [:float_val {:optional true :presence :oneof-field} [:maybe :double]]
+           [:singular_msg {:optional true :presence :oneof-field} [:maybe [:ref :my.ns.singular/Singular]]]
+           [:packed_msg {:optional true :presence :oneof-field} [:maybe [:ref :my.ns.packed/Packed]]]
+           [:msg_1 {:optional true :presence :oneof-field} [:maybe [:ref :./Msg1]]]
+           [:msg_a {:optional true :presence :oneof-field} [:maybe [:ref :./MsgA]]]]
           [:oneof
            :either
            [:int32_val
@@ -156,7 +159,7 @@
 (deftest test-schema-malli-packed
   (is (= (malli-schema :my.ns.packed/Packed)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:int32_val {:optional true :presence :repeated} [:vector :int32]]
           [:int64_val {:optional true :presence :repeated} [:vector :int64]]
           [:uint32_val {:optional true :presence :repeated} [:vector :uint32]]
@@ -180,7 +183,7 @@
 (deftest test-schema-malli-repeat
   (is (= (malli-schema :my.ns.repeat/Repeat)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:int32_val {:optional true :presence :repeated} [:vector :int32]]
           [:int64_val {:optional true :presence :repeated} [:vector :int64]]
           [:uint32_val {:optional true :presence :repeated} [:vector :uint32]]
@@ -207,7 +210,7 @@
 (deftest test-schema-malli-required
   (is (= (malli-schema :my.ns.required/Required)
          [:map
-          {:closed true}
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
           [:int32_val {:presence :required} :int32]
           [:int64_val {:presence :required} :int64]
           [:uint32_val {:presence :required} :uint32]
@@ -244,7 +247,7 @@
 
 (deftest test-schema-malli-implicit
   (is (= (malli-schema :my.ns.implicit/Implicit) [:map
-                                                  {:closed true}
+                                                  {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                                   [:int32_val {:optional true
                                                                :presence :implicit} :int32]
                                                   [:string_val {:optional true
@@ -258,23 +261,23 @@
 (deftest test-schema-malli-singular
   (is (= (malli-schema :my.ns.singular/Singular)
          [:map
-          {:closed true}
-          [:int32_val {:optional true :presence :optional} :int32]
-          [:int64_val {:optional true :presence :optional} :int64]
-          [:uint32_val {:optional true :presence :optional} :uint32]
-          [:uint64_val {:optional true :presence :optional} :uint64]
-          [:sint32_val {:optional true :presence :optional} :sint32]
-          [:sint64_val {:optional true :presence :optional} :sint64]
-          [:bool_val {:optional true :presence :optional} :boolean]
-          [:enum_val {:optional true :presence :optional} [:ref :my.ns.enum/Enum]]
-          [:fixed64_val {:optional true :presence :optional} :fixed64]
-          [:sfixed64_val {:optional true :presence :optional} :sfixed64]
-          [:double_val {:optional true :presence :optional} :double]
-          [:string_val {:optional true :presence :optional} :string]
-          [:bytes_val {:optional true :presence :optional} :bytes]
-          [:fixed32_val {:optional true :presence :optional} :fixed32]
-          [:sfixed32_val {:optional true :presence :optional} :sfixed32]
-          [:float_val {:optional true :presence :optional} :double]])) ; TODO
+          {:closed true} [:? {:optional true :presence :? :default nil} :any]
+          [:int32_val {:optional true :presence :optional} [:maybe :int32]]
+          [:int64_val {:optional true :presence :optional} [:maybe :int64]]
+          [:uint32_val {:optional true :presence :optional} [:maybe :uint32]]
+          [:uint64_val {:optional true :presence :optional} [:maybe :uint64]]
+          [:sint32_val {:optional true :presence :optional} [:maybe :sint32]]
+          [:sint64_val {:optional true :presence :optional} [:maybe :sint64]]
+          [:bool_val {:optional true :presence :optional} [:maybe :boolean]]
+          [:enum_val {:optional true :presence :optional} [:maybe [:ref :my.ns.enum/Enum]]]
+          [:fixed64_val {:optional true :presence :optional} [:maybe :fixed64]]
+          [:sfixed64_val {:optional true :presence :optional} [:maybe :sfixed64]]
+          [:double_val {:optional true :presence :optional} [:maybe :double]]
+          [:string_val {:optional true :presence :optional} [:maybe :string]]
+          [:bytes_val {:optional true :presence :optional} [:maybe :bytes]]
+          [:fixed32_val {:optional true :presence :optional} [:maybe :fixed32]]
+          [:sfixed32_val {:optional true :presence :optional} [:maybe :sfixed32]]
+          [:float_val {:optional true :presence :optional} [:maybe :double]]])) ; TODO
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:int32_val 0} registry)))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:int64_val 0} registry)))
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:uint32_val 0} registry)))
@@ -367,60 +370,60 @@
 
 
 (deftest test-no-package
-  (is (= (malli-schema :./Msg1)           [:map {:closed true} [:int32_val {:optional true :presence :optional} :int32]]))
-  (is (= (malli-schema :./MsgA)           [:map {:closed true} [:int32_val {:optional true :presence :optional} :int32]]))
-  (is (= (malli-schema :./MsgA.MsgB)      [:map {:closed true} [:int64_val {:optional true :presence :optional} :int64]]))
-  (is (= (malli-schema :./MsgA.MsgB.MsgC) [:map {:closed true} [:uint32_val {:optional true :presence :optional} :uint32]])))
+  (is (= (malli-schema :./Msg1)           [:map {:closed true} [:? {:optional true :presence :? :default nil} :any] [:int32_val {:optional true :presence :optional} [:maybe :int32]]]))
+  (is (= (malli-schema :./MsgA)           [:map {:closed true} [:? {:optional true :presence :? :default nil} :any] [:int32_val {:optional true :presence :optional} [:maybe :int32]]]))
+  (is (= (malli-schema :./MsgA.MsgB)      [:map {:closed true} [:? {:optional true :presence :? :default nil} :any] [:int64_val {:optional true :presence :optional} [:maybe :int64]]]))
+  (is (= (malli-schema :./MsgA.MsgB.MsgC) [:map {:closed true} [:? {:optional true :presence :? :default nil} :any] [:uint32_val {:optional true :presence :optional} [:maybe :uint32]]])))
 
 (deftest test-extension
   (is (= (malli-schema :my.ns.extension/Extendable) [:map
-                                                     {:closed true}
-                                                     [:int32_val {:optional true :presence :optional} :int32]
-                                                     [:int64_val {:optional true :presence :optional} :int64]
-                                                     [:my.ns.extension/Msg1.double_val {:optional true :presence :optional} :double]
-                                                     [:my.ns.extension/string_val {:optional true :presence :optional} :string]])))
+                                                     {:closed true} [:? {:optional true :presence :? :default nil} :any]
+                                                     [:int32_val {:optional true :presence :optional} [:maybe :int32]]
+                                                     [:int64_val {:optional true :presence :optional} [:maybe :int64]]
+                                                     [:my.ns.extension/Msg1.double_val {:optional true :presence :optional} [:maybe :double]]
+                                                     [:my.ns.extension/string_val {:optional true :presence :optional} [:maybe :string]]])))
 
 (deftest test-update-msg-field-presence
   (let [base {:my.ns/Enum [:enum :ZERO :ONE]
               :my.ns/MsgB [:map
-                           {:closed true}
+                           {:closed true} [:? {:optional true :presence :? :default nil} :any]
                            [:field :int32]]}]
     (is (= (vschemas-update-msg-field-presence
-            (merge base {:my.ns/MsgA [:map {:closed true}
+            (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                       [:msg_val {:optional true :presence :implicit} [:ref :my.ns/MsgB]] ; :implicit
                                       [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]}))
-           (merge base {:my.ns/MsgA [:map {:closed true}
+           (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                      [:msg_val {:optional true :presence :optional} [:ref :my.ns/MsgB]] ; becomes :optional
                                      [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]})))
     
     (is (= (vschemas-update-msg-field-presence
-            (merge base {:my.ns/MsgA [:map {:closed true}
+            (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                       [:msg_val {:optional true :presence :optional}[:ref :my.ns/MsgB]] ; opitonal
                                       [:enum_val {:optional true :presence :optional} [:ref :my.ns/Enum]]]}))
-           (merge base {:my.ns/MsgA [:map {:closed true}
+           (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                      [:msg_val {:optional true :presence :optional} [:ref :my.ns/MsgB]]  ; no change
                                      [:enum_val {:optional true :presence :optional} [:ref :my.ns/Enum]]]}))) 
     
     (is (= (vschemas-update-msg-field-presence
-            (merge base {:my.ns/MsgA [:map {:closed true}
+            (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                       [:msg_val {:optional false :presence :required} [:ref :my.ns/MsgB]] ; required
                                       [:enum_val {:optional false :presence :required} [:ref :my.ns/Enum]]]}))
-           (merge base {:my.ns/MsgA [:map {:closed true}
+           (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                      [:msg_val {:optional false :presence :required} [:ref :my.ns/MsgB]]  ; no change
                                      [:enum_val {:optional false :presence :required} [:ref :my.ns/Enum]]]})))
     
     (is (= (vschemas-update-msg-field-presence
-            (merge base {:my.ns/MsgA [:map {:closed true}
+            (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                       [:msg_val {} [:ref :my.ns/MsgB]]                ; empty property
                                       [:enum_val {} [:ref :my.ns/Enum]]]}))
-           (merge base {:my.ns/MsgA [:map {:closed true}
+           (merge base {:my.ns/MsgA [:map {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                      [:msg_val {} [:ref :my.ns/MsgB]]                 ; no change
                                      [:enum_val {} [:ref :my.ns/Enum]]]})))))
 
 (def test-vschemas {:my.ns/Enum [:enum :ZERO :ONE]
                     :my.ns/MsgA [:and
                                  [:map
-                                  {:closed true}
+                                  {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                   [:either
                                    {:optional true :presence :oneof}
                                    [:enum
@@ -435,7 +438,7 @@
                                   [:int32_val
                                    :int64_val]]]
                     :my.ns/MsgB [:map
-                                 {:closed true}
+                                 {:closed true} [:? {:optional true :presence :? :default nil} :any]
                                  [:field {:optional true :presence :implicit} :int32]]})
 
 (deftest test-update-msg-with-oneof-field-presence
@@ -443,7 +446,7 @@
          {:my.ns/Enum [:enum :ZERO :ONE]
           :my.ns/MsgA [:and
                        [:map
-                        {:closed true}
+                        {:closed true} [:? {:optional true :presence :? :default nil} :any]
                         [:either
                          {:optional true :presence :oneof}
                          [:enum
@@ -458,10 +461,10 @@
                         [:int32_val
                          :int64_val]]]
           :my.ns/MsgB [:map
-                       {:closed true}
+                       {:closed true} [:? {:optional true :presence :? :default nil} :any]
                        [:field {:optional true :presence :implicit} :int32]]})))
 
 (deftest test-vschemas-make-implicit-defaults
   (is (= (vschemas-make-defaults test-vschemas)
-         {:my.ns/MsgA {:msg_val nil, :enum_val :ZERO}
+         {:my.ns/MsgA {:either nil, :int32_val nil, :int64_val nil, :msg_val nil, :enum_val :ZERO},
           :my.ns/MsgB {:field 0}})))

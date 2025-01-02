@@ -1,6 +1,6 @@
 (ns clojobuf.core-test
-  (:require [clojobuf.core :refer [encode decode find-fault
-                                   ->malli-registry ->complete-malli-schema]]
+  (:require [clojobuf.core :refer [encode decode find-fault default-msg
+                                   ->malli-registry]]
             [clojobuf.macro :refer [protoc-macro]]
             [clojure.test :refer [is deftest run-tests]]))
 
@@ -10,7 +10,8 @@
                                                     "no_package.proto",
                                                     "extension.proto"
                                                     "required.proto",
-                                                    "implicit.proto"]))
+                                                    "implicit.proto"
+                                                    "oneof.proto"]))
 (def registry (let [[codec malli] schemas] [codec (->malli-registry malli)]))
 
 (defn codec [msg-id msg]
@@ -19,11 +20,13 @@
        (decode registry msg-id)))
 
 #?(:clj (defmacro rt [msg-id msg]
-          `(is (= (codec ~msg-id ~msg) ~msg))))
+          `(is (= (codec ~msg-id ~msg)
+                  (merge (default-msg registry ~msg-id) ~msg)))))
 
 ; TODO figure out how to use macro for cljs so that error line number tallies with source
 #?(:cljs (defn rt [msg-id msg]
-           (is (= (codec msg-id msg) msg))))
+           (is (= (codec msg-id msg)
+                  (merge (default-msg registry msg-id) msg)))))
 
 (deftest test-codec-mappy
   (rt :my.ns.map/Mappy {:uint32_sint64 {0 0, 1 1, 2 -2, 3 3, 4 -4}})
@@ -206,6 +209,11 @@
                            :string_val ""}))
          0)))
 
+(deftest test-encode-:?
+  (is (= (alength (encode registry :my.ns.implicit/Implicit
+                          {:? [[1 2 3]]}))
+         0)))
+
 (deftest test-implicit
   #_(is (= (decode registry :my.ns.implicit/Implicit
                    #?(:clj (byte-array 0))
@@ -215,7 +223,7 @@
   (is (= (decode registry :my.ns.implicit/Implicit2
                  #?(:clj (byte-array 0))
                  #?(:cljs (js/Uint8Array.)))
-         {})))
+         {:implicit nil})))
 
 (def msg-required {:int32_val 0
                    :int64_val 0
@@ -245,7 +253,7 @@
   (rt :my.ns.required/Required msg-required))
 
 (deftest test-required-defaults
-  (is (= (-> registry second (:defaults) (:my.ns.required/Required))
+  (is (= (default-msg registry :my.ns.required/Required)
          {:int32_val 0,
           :int64_val 0,
           :uint32_val 0,
@@ -261,13 +269,15 @@
           :fixed32_val 0,
           :sfixed32_val 0,
           :float_val 0}))
-  (let [b (-> registry second (:defaults) (:my.ns.required/RequiredBytes) (:bytes_val))]
+  (let [b (-> registry
+              (default-msg :my.ns.required/RequiredBytes)
+              (:bytes_val))]
     (is (#?(:clj bytes?
             :cljs #(= js/Uint8Array (type %))) b))
     (is (= (alength b) 0))))
 
 (deftest test-implicit-defaults
-  (is (= (-> registry second (:defaults) (:my.ns.implicit/Implicit3))
+  (is (= (default-msg registry :my.ns.implicit/Implicit3)
          {:int32_val 0,
           :int64_val 0,
           :uint32_val 0,
@@ -283,13 +293,15 @@
           :fixed32_val 0,
           :sfixed32_val 0,
           :float_val 0}))
-  (let [b (-> registry second (:defaults) (:my.ns.implicit/ImplicitBytes) (:bytes_val))]
+  (let [b (-> registry
+              (default-msg :my.ns.implicit/ImplicitBytes)
+              (:bytes_val))]
     (is (#?(:clj bytes?
             :cljs #(= js/Uint8Array (type %))) b))
     (is (= (alength b) 0))))
 
 (deftest test-optional-defaults
-  (is (= (-> registry second (:defaults) (:my.ns.singular/Singular))
+  (is (= (default-msg registry :my.ns.singular/Singular)
          {:int32_val nil,
           :int64_val nil,
           :uint32_val nil,
@@ -308,7 +320,7 @@
           :float_val nil})))
 
 (deftest test-repeated-defaults
-  (is (= (-> registry second (:defaults) (:my.ns.repeat/Repeat))
+  (is (= (default-msg registry :my.ns.repeat/Repeat)
          {:int32_val [],
           :int64_val [],
           :uint32_val [],
@@ -327,8 +339,32 @@
           :float_val [],
           :singular_msg []})))
 
+(deftest test-oneof-defaults
+  (is (= (default-msg registry :my.ns.oneof/Either)
+         {:either nil,
+          :int32_val nil,
+          :int64_val nil,
+          :uint32_val nil,
+          :uint64_val nil,
+          :sint32_val nil,
+          :sint64_val nil,
+          :bool_val nil,
+          :enum_val nil,
+          :fixed64_val nil,
+          :sfixed64_val nil,
+          :double_val nil,
+          :string_val nil,
+          :bytes_val nil,
+          :fixed32_val nil,
+          :sfixed32_val nil,
+          :float_val nil,
+          :singular_msg nil,
+          :packed_msg nil,
+          :msg_1 nil,
+          :msg_a nil})))
+
 (deftest test-map-defaults
-  (is (= (-> registry second (:defaults) (:my.ns.map/Mappy))
+  (is (= (default-msg registry :my.ns.map/Mappy)
          {:uint32_sint64 {},
           :int64_string {},
           :fixed32_double {},
@@ -336,4 +372,23 @@
           :sint64_singular {},
           :uint64_packed {}})))
 
-(run-tests)
+(deftest test-empty-map-encode-to-empty-bin
+  (is (= (alength (encode registry :my.ns.map/Mappy
+                          {}))
+         0))
+  (is (= (alength (encode registry :my.ns.map/Mappy
+                          {:uint32_sint64 {},
+                           :int64_string {},
+                           :fixed32_double {},
+                           :sfixed64_enum {},
+                           :sint64_singular {},
+                           :uint64_packed {}}))
+         0))
+  (is (= (alength (encode registry :my.ns.map/Mappy
+                          {:uint32_sint64 nil,
+                           :int64_string nil,
+                           :fixed32_double nil,
+                           :sfixed64_enum nil,
+                           :sint64_singular nil,
+                           :uint64_packed nil}))
+         0)))

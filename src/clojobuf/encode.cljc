@@ -98,23 +98,24 @@
       (when (< idx (count keys-vals))
         (let [[k v] (nth keys-vals idx)
               field-schema (msg-schema k)]
-          (cond
-            (oneof? field-schema)
+          (when (and (not (nil? v)) (not= k :?))
+            (cond
+              (oneof? field-schema)
             ; value of oneof == key of actual field in msg
-            (let [target-field-schema (msg-schema v)]
-              (if (msg|enum? target-field-schema)
-                (encode-msgfield|enumfield writer registry target-field-schema (msg v))
-                (encode-prifield writer proto2|3 target-field-schema (msg v))))
+              (let [target-field-schema (msg-schema v)]
+                (if (msg|enum? target-field-schema)
+                  (encode-msgfield|enumfield writer registry target-field-schema (msg v))
+                  (encode-prifield writer proto2|3 target-field-schema (msg v))))
 
-            (msg|enum? field-schema)
-            (when-not (oneof-target? field-schema)
-              (encode-msgfield|enumfield writer registry field-schema v))
+              (msg|enum? field-schema)
+              (when-not (oneof-target? field-schema)
+                (encode-msgfield|enumfield writer registry field-schema v))
 
-            (map?? field-schema)
-            (encode-mapfield writer registry field-schema v)
+              (map?? field-schema)
+              (encode-mapfield writer registry field-schema v)
 
-            :else
-            (when-not (oneof-target? field-schema)
-              (encode-prifield writer proto2|3 field-schema v))))
+              :else
+              (when-not (oneof-target? field-schema)
+                (encode-prifield writer proto2|3 field-schema v)))))
         (recur (inc idx))))
     (->bytes writer)))

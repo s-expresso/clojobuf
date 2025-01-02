@@ -10,6 +10,16 @@
             #?(:clj [rubberbuf.core :as rc]) ; rubberbuf.core uses rubberbuf.util which uses cljs-node-io.core that is not available to cljs browser runtime
             [rubberbuf.ast-postprocess :refer [unnest]]))
 
+(defn find-fault
+  "Check msg against schema of msg-id in registry. Return a map of fault(s) found, or nil if no fault."
+  [registry msg-id msg]
+  (-> (m/explain (util/dot-qualify msg-id) msg (second registry))
+      (me/humanize)))
+
+(defn default-msg
+  [registry msg-id]
+  (get-in (second registry) [:defaults (util/dot-qualify msg-id)]))
+
 (defn encode
   "Encode a message and return its protobuf binary, or return nil if msg is ill-formed.
    registry: output of clojobuf.schema.protoc
@@ -22,24 +32,22 @@
                 msg)))
 
 (defn decode
-  "Decode a protobuf binary and return its message
+  "Decode a protobuf binary and return its message, or return nil if decoded msg is ill-formed.
    registry: output of clojobuf.schema.protoc
    msg-id:   message id with ns scope, e.g. :my.ns.scope/MsgA.MsgB
    bin:      binary to be decoded"
   [registry msg-id bin]
-  (decode-msg registry
-              ((first registry) msg-id)
-              bin))
+  (let [msg (decode-msg registry
+                        ((first registry) msg-id)
+                        bin)]
+    (when (m/validate [:ref (util/dot-qualify msg-id)] msg (second registry))
+      (merge (default-msg registry msg-id) msg))))
 
-(defn find-fault
-  "Check msg against schema of msg-id in registry. Return a map of fault(s) found, or nil if no fault."
-  [registry msg-id msg]
-  (-> (m/explain (util/dot-qualify msg-id) msg (second registry))
-      (me/humanize)))
 
 (defn generate
   [registry msg-id]
-  (mg/generate [:ref (util/dot-qualify msg-id)] (second registry)))
+  (merge (default-msg registry msg-id)
+         (mg/generate [:ref (util/dot-qualify msg-id)] (second registry))))
 
 (defn ->complete-malli-schema
   "Add value schema to a composite registry. Return the new registry."

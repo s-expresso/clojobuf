@@ -81,7 +81,7 @@ Code will be like [src/clojobuf/example/ex1.cljc](https://github.com/s-expresso/
     (find-fault registry :my.pb.ns/Msg {:this-field-doesnt-exists 0})))
 ; => {:this-field-doesnt-exists ["disallowed key"]}
 ```
-i.e. these 4 functions are all you need: `protoc`, `encode`, `decode` and `find-fault`
+i.e. these 4 functions are all you need: `protoc`, `encode`, `decode` and `find-fault`; though `default-msg` will probably be useful too.
 
 Note: `clojobuf.core/protoc` is only available to clj runtime, for cljs runtime, use:
 * `clojobuf.nodejs/protoc` which works for cljs targeting nodejs, or
@@ -199,7 +199,38 @@ You can use `protoc-macro` to invoke protoc at compile time. For this, `:auto-ma
 ```
 `protoc-macro` works on all runtime, but is especially useful for cljs targeting browser as it doesn't have file system access at runtime. See [src/clojobuf/example/ex3.cljc](https://github.com/s-expresso/clojobuf/blob/main/src/clojobuf/example/ex3.cljc) for a working example.
 
-## Unknown Fields
+
+## clojobuf.core/encode
+
+### Usage
+```
+(clojobuf.core/encode <REGISTRY> <MSG-ID> <MSG>)
+```
+where
+* `REGISTRY` - output of `protoc`
+* `MSG-ID` - message id, e.g. `:my.pb.ns/Msg`
+* `MSG` - map like messaage corresponding to the message schema, note the following on field presence:
+  * required: if field is unset, encoding fails and nil is retured
+  * optional: if field is unset, it will not be serialized
+  * implicit: if field is unset or same as default value, it will not be serialized
+* returns encoded binary, or `nil` for error case
+
+## clojobuf.core/decode
+
+### Usage
+```
+(clojobuf.core/decode <REGISTRY> <MSG-ID> <BIN>)
+```
+where
+* `REGISTRY` - output of `protoc`
+* `MSG-ID` - message id, e.g. `:my.pb.ns/Msg`
+* `BIN` - binary to be decoded, note the following on field presence:
+  * required: if absent in binary, decoding fails and nil is returned
+  * optional: if absent in binary, field will be nil
+  * implicit: if absent in binary, field will be dault value
+* returns decoded message, or `nil` for error case
+
+### Unknown Fields
 During decode, unknown fields are placed into `:?` as a vector of 3 values (field number, wire type, wire value).
 
 ```clojure
@@ -208,6 +239,36 @@ During decode, unknown fields are placed into `:?` as a vector of 3 values (fiel
      [3 1 456] ; field number: 3, wire-type: 1, value: 456
      ]}
 ```
+
+## clojobuf.core/find-fault
+
+### Usage
+```
+(clojobuf.core/find-fault <REGISTRY> <MSG-ID> <MSG>)
+```
+where
+* `REGISTRY` - output of `protoc`
+* `MSG-ID` - message id, e.g. `:my.pb.ns/Msg`
+* `MSG` - map like messaage corresponding to the message schema
+* returns map like object explaining the fault(s) found, or `nil` if none found.
+
+## clojobuf.core/default-msg
+
+### Usage
+```
+(clojure.core/default-msg <REGISTRY> <MSG-ID>)
+```
+where
+* `REGISTRY` - output of `protoc`
+* `MSG-ID` - message id, e.g. `:my.pb.ns/Msg`
+* returns a message containing all its fields:
+  * required field: default value, or `nil` for message type
+  * optional field: `nil`
+  * implicit field: default value
+  * repeated field: empty `[]`
+  * oneof field: `nil`
+  * map field: `{}`
+
 
 ## Related Protobuf Projects
 * https://github.com/s-expresso/rubberbuf
