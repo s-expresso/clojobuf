@@ -1,8 +1,9 @@
 (ns clojobuf.schema
   (:require [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
-            [clojobuf.util :refer [dot-qualify default-opt]]
+            [clojobuf.util :refer [dot-qualify default-opt default-pri]]
             [clojure.set :refer [map-invert]]
             [clojure.test.check.generators :as gen]
+            [flatland.ordered.map :refer [ordered-map]]
             [malli.core :as m]
             [com.rpl.specter :as sp]))
 
@@ -290,3 +291,57 @@
                   update-implicit-property
                   vschemas)))
 
+(defn vschemas-make-defaults
+  "Make default values from validation schema."
+  [vschemas]
+  (let [get-default (fn [field-schema-maybe]
+                      ; valid field-schema-maybe example:
+                      ; [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]
+                      (if (and (vector?                                  field-schema-maybe)
+                                 (= 3                               (count field-schema-maybe))  ; always true
+                                 (map?                             (second field-schema-maybe))) ; always true
+                        (let [presence ((second field-schema-maybe) :presence)]
+                          (cond
+                            (contains? #{:implicit :required} presence)
+                            (let [typ (nth field-schema-maybe 2)]
+                              (cond
+                                (= :bytes typ) #?(:clj (byte-array 0)
+                                                  :cljs (js/Uint8Array.))
+                                (= :boolean typ) false
+                                (keyword? typ) (default-pri typ)
+                                (vector? typ) (let [schema (vschemas (second typ))]
+                                            ; only handle enum because implicit message is actually optional
+                                            ; and we do not (may revisit?) support default value for message
+                                                (when (= :enum (first schema)) (second schema)))))
+                            
+                            (= :optional presence) nil
+                            (= :repeated presence) []
+                            (= :map presence) {}
+                            (= :oneof presence) :-silent-
+                            (= :oneof-field presence) :-silent-
+                            :else :-silent-)) ; shouldn't reach here
+                        :-silent-))
+        xform-msg (fn [form]
+                    ; form example:
+                    ; [:map
+                    ;  {:closed true}
+                    ;  [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]
+                    ;  [:int_val {:optional true :presence :implicit} :int32]]
+                    (loop [idx 1, xformed (ordered-map)]
+                      (if (>= idx (count form)) xformed ; terminate loop and return xformed
+                          (let [field-schema-maybe (nth form idx)]
+                            (recur (inc idx) (let [default (get-default field-schema-maybe)]
+                                               (if (= :-silent- default)
+                                                 xformed
+                                                 (assoc xformed (first field-schema-maybe) default))))))))
+        xform (fn [form] 
+                (cond
+                  (= :map (first form)) (xform-msg form)
+                  (= :and (first form)) (xform-msg (second form))
+                  :else nil))]
+    (reduce-kv (fn [m k v] (let [xformed (xform v)]
+                             (if (nil? xformed)
+                               m
+                               (assoc m k xformed))))
+               (ordered-map)
+               vschemas)))

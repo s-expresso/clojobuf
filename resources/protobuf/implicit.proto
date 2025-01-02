@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "enum.proto";
+
 package my.ns.implicit;
 
 message Implicit {
@@ -9,4 +11,31 @@ message Implicit {
 
 message Implicit2 {
     Implicit implicit = 1;
+}
+
+message Implicit3 {
+    // wire-type 0
+    int32 int32_val       = 1;
+    int64 int64_val       = 2;
+    uint32 uint32_val     = 3;
+    uint64 uint64_val     = 4;
+    sint32 sint32_val     = 5;
+    sint64 sint64_val     = 6;
+    bool bool_val         = 7;
+    my.ns.enum.Enum enum_val  = 8;
+    // wire-type 1
+    fixed64 fixed64_val   = 9;
+    sfixed64 sfixed64_val = 10;
+    double double_val     = 11;
+    // wire-type 2
+    string string_val     = 12;
+    // bytes bytes_val       = 13;
+    // wire-type 5
+    fixed32 fixed32_val   = 14;
+    sfixed32 sfixed32_val = 15;    
+    float float_val       = 16;
+}
+
+message ImplicitBytes {
+    bytes bytes_val       = 1;
 }

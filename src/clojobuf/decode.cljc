@@ -1,7 +1,7 @@
 (ns clojobuf.decode
   (:require [clojobuf-codec.io.reader :refer [make-reader available?]]
             [clojobuf-codec.decode :refer [read-len-coded-bytes read-packed read-pri read-raw-wire read-tag]]
-            [clojobuf.util :refer [fname typ ktype-vtype repeated? msg|enum? map?? msg|enum-id fill-default]]))
+            [clojobuf.util :refer [fname typ ktype-vtype repeated? msg|enum? map?? msg|enum-id]]))
 
 (defn oneof? [field-def] (let [form (nth field-def 2)]
                            (and (sequential? form) (= (first form) :oneof))))

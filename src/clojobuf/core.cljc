@@ -1,7 +1,7 @@
 (ns clojobuf.core
   (:require [clojobuf.encode :refer [encode-msg]]
             [clojobuf.decode :refer [decode-msg]]
-            [clojobuf.schema :refer [xform-ast vschemas-pb-types vschemas-update-msg-field-presence]]
+            [clojobuf.schema :refer [xform-ast vschemas-pb-types vschemas-update-msg-field-presence vschemas-make-defaults]]
             [clojobuf.util :as util]
             [malli.core :as m]
             [malli.error :as me]
@@ -41,11 +41,6 @@
   [registry msg-id]
   (mg/generate [:ref (util/dot-qualify msg-id)] (second registry)))
 
-(defn fill-default
-  "Fill default values in msg, if any, and return the new msg."
-  [registry msg-id msg]
-  (util/fill-default registry msg-id msg))
-
 (defn ->complete-malli-schema
   "Add value schema to a composite registry. Return the new registry."
   [schema] (into vschemas-pb-types schema))
@@ -56,7 +51,8 @@
   [schema]
   {:registry (mr/composite-registry
               m/default-registry
-              (->complete-malli-schema schema))})
+              (->complete-malli-schema schema))
+   :defaults (vschemas-make-defaults schema)})
 
 ; protoc needs file access which is not available to cljs browser runtime
 ; * for cljs browser runtime, use clojobuf.macro/protoc-macro

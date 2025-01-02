@@ -1,5 +1,5 @@
 (ns clojobuf.core-test
-  (:require [clojobuf.core :refer [encode decode find-fault fill-default
+  (:require [clojobuf.core :refer [encode decode find-fault
                                    ->malli-registry ->complete-malli-schema]]
             [clojobuf.macro :refer [protoc-macro]]
             [clojure.test :refer [is deftest run-tests]]))
@@ -12,8 +12,6 @@
                                                     "required.proto",
                                                     "implicit.proto"]))
 (def registry (let [[codec malli] schemas] [codec (->malli-registry malli)]))
-
-(def malli-schema (->complete-malli-schema (second schemas)))
 
 (defn codec [msg-id msg]
   (->> msg
@@ -246,14 +244,96 @@
                          msg-required))))
   (rt :my.ns.required/Required msg-required))
 
-#_(deftest test-fill-default
-  (is (= (fill-default registry :my.ns.required/Required {})
-          msg-required))
-  (is (= (fill-default registry :my.ns.required/NestedRequired {})
-         {:required
-           msg-required}))
-  (is (= (fill-default registry :my.ns.map/Mappy {})
-         {}))
-  (is (= (fill-default registry :my.ns.oneof/Either {})
-         {})))
+(deftest test-required-defaults
+  (is (= (-> registry second (:defaults) (:my.ns.required/Required))
+         {:int32_val 0,
+          :int64_val 0,
+          :uint32_val 0,
+          :uint64_val 0,
+          :sint32_val 0,
+          :sint64_val 0,
+          :bool_val false,
+          :enum_val :MINUS_ONE,
+          :fixed64_val 0,
+          :sfixed64_val 0,
+          :double_val 0,
+          :string_val "",
+          :fixed32_val 0,
+          :sfixed32_val 0,
+          :float_val 0}))
+  (let [b (-> registry second (:defaults) (:my.ns.required/RequiredBytes) (:bytes_val))]
+    (is (#?(:clj bytes?
+            :cljs #(= js/Uint8Array (type %))) b))
+    (is (= (alength b) 0))))
 
+(deftest test-implicit-defaults
+  (is (= (-> registry second (:defaults) (:my.ns.implicit/Implicit3))
+         {:int32_val 0,
+          :int64_val 0,
+          :uint32_val 0,
+          :uint64_val 0,
+          :sint32_val 0,
+          :sint64_val 0,
+          :bool_val false,
+          :enum_val :MINUS_ONE,
+          :fixed64_val 0,
+          :sfixed64_val 0,
+          :double_val 0,
+          :string_val "",
+          :fixed32_val 0,
+          :sfixed32_val 0,
+          :float_val 0}))
+  (let [b (-> registry second (:defaults) (:my.ns.implicit/ImplicitBytes) (:bytes_val))]
+    (is (#?(:clj bytes?
+            :cljs #(= js/Uint8Array (type %))) b))
+    (is (= (alength b) 0))))
+
+(deftest test-optional-defaults
+  (is (= (-> registry second (:defaults) (:my.ns.singular/Singular))
+         {:int32_val nil,
+          :int64_val nil,
+          :uint32_val nil,
+          :uint64_val nil,
+          :sint32_val nil,
+          :sint64_val nil,
+          :bool_val nil,
+          :enum_val nil,
+          :fixed64_val nil,
+          :sfixed64_val nil,
+          :double_val nil,
+          :string_val nil,
+          :bytes_val nil,
+          :fixed32_val nil,
+          :sfixed32_val nil,
+          :float_val nil})))
+
+(deftest test-repeated-defaults
+  (is (= (-> registry second (:defaults) (:my.ns.repeat/Repeat))
+         {:int32_val [],
+          :int64_val [],
+          :uint32_val [],
+          :uint64_val [],
+          :sint32_val [],
+          :sint64_val [],
+          :bool_val [],
+          :enum_val [],
+          :fixed64_val [],
+          :sfixed64_val [],
+          :double_val [],
+          :string_val [],
+          :bytes_val [],
+          :fixed32_val [],
+          :sfixed32_val [],
+          :float_val [],
+          :singular_msg []})))
+
+(deftest test-map-defaults
+  (is (= (-> registry second (:defaults) (:my.ns.map/Mappy))
+         {:uint32_sint64 {},
+          :int64_string {},
+          :fixed32_double {},
+          :sfixed64_enum {},
+          :sint64_singular {},
+          :uint64_packed {}})))
+
+(run-tests)

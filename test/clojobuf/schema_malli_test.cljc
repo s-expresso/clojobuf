@@ -2,7 +2,7 @@
   (:require #?(:clj [clojobuf.core :refer [protoc ->malli-registry]])
             #?(:cljs [clojobuf.nodejs :refer [protoc]])
             #?(:cljs [clojobuf.core :refer [->malli-registry]])
-            [clojobuf.schema :refer [vschemas-update-msg-field-presence]]
+            [clojobuf.schema :refer [vschemas-update-msg-field-presence vschemas-make-defaults]]
             [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
             [clojure.test :refer [is deftest run-tests]]
             [malli.core :as m]
@@ -417,27 +417,29 @@
                                      [:msg_val {} [:ref :my.ns/MsgB]]                 ; no change
                                      [:enum_val {} [:ref :my.ns/Enum]]]})))))
 
+(def test-vschemas {:my.ns/Enum [:enum :ZERO :ONE]
+                    :my.ns/MsgA [:and
+                                 [:map
+                                  {:closed true}
+                                  [:either
+                                   {:optional true :presence :oneof}
+                                   [:enum
+                                    :int32_val
+                                    :int64_val]]
+                                  [:int32_val {:optional true :presence :oneof-field} :int32]
+                                  [:int64_val {:optional true :presence :oneof-field} :int64]
+                                  [:msg_val {:optional true :presence :implicit} [:ref :my.ns/MsgB]] ; implicit
+                                  [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]
+                                 [:oneof
+                                  :either
+                                  [:int32_val
+                                   :int64_val]]]
+                    :my.ns/MsgB [:map
+                                 {:closed true}
+                                 [:field {:optional true :presence :implicit} :int32]]})
+
 (deftest test-update-msg-with-oneof-field-presence
-  (is (= (vschemas-update-msg-field-presence {:my.ns/Enum [:enum :ZERO :ONE]
-                                              :my.ns/MsgA [:and
-                                                           [:map
-                                                            {:closed true}
-                                                            [:either
-                                                             {:optional true :presence :oneof}
-                                                             [:enum
-                                                              :int32_val
-                                                              :int64_val]]
-                                                            [:int32_val {:optional true :presence :oneof-field} :int32]
-                                                            [:int64_val {:optional true :presence :oneof-field} :int64]
-                                                            [:msg_val {:optional true :presence :implicit} [:ref :my.ns/MsgB]] ; implicit
-                                                            [:enum_val {:optional true :presence :implicit} [:ref :my.ns/Enum]]]
-                                                           [:oneof
-                                                            :either
-                                                            [:int32_val
-                                                             :int64_val]]]
-                                              :my.ns/MsgB [:map
-                                                           {:closed true}
-                                                           [:field :int32]]})
+  (is (= (vschemas-update-msg-field-presence test-vschemas)
          {:my.ns/Enum [:enum :ZERO :ONE]
           :my.ns/MsgA [:and
                        [:map
@@ -457,4 +459,9 @@
                          :int64_val]]]
           :my.ns/MsgB [:map
                        {:closed true}
-                       [:field :int32]]})))
+                       [:field {:optional true :presence :implicit} :int32]]})))
+
+(deftest test-vschemas-make-implicit-defaults
+  (is (= (vschemas-make-defaults test-vschemas)
+         {:my.ns/MsgA {:msg_val nil, :enum_val :ZERO}
+          :my.ns/MsgB {:field 0}})))
