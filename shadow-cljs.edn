@@ -1,3 +1,0 @@
-;; shadow-cljs configuration
-{:deps {:aliases [:shadow]}
- :jvm-opts ["-Xmx1G"]}
