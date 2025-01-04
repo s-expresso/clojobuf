@@ -4,19 +4,19 @@
   <packaging>jar</packaging>
   <groupId>com.github.s-expresso</groupId>
   <artifactId>clojobuf</artifactId>
-  <version>0.1.12</version>
+  <version>0.2.0</version>
   <name>clojobuf</name>
   <scm>
     <connection>scm:git:git://github.com/s-expresso/clojobuf.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/s-expresso/clojobuf.git</developerConnection>
-    <tag>v0.1.12</tag>
+    <tag>v0.2.0</tag>
     <url>https://github.com/s-expresso/clojobuf</url>
   </scm>
   <dependencies>
     <dependency>
       <groupId>org.clojure</groupId>
       <artifactId>clojure</artifactId>
-      <version>1.11.1</version>
+      <version>1.12.0</version>
     </dependency>
     <dependency>
       <groupId>org.clojure</groupId>
@@ -27,6 +27,11 @@
       <groupId>org.clojure</groupId>
       <artifactId>test.check</artifactId>
       <version>0.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.rpl</groupId>
+      <artifactId>specter</artifactId>
+      <version>1.1.4</version>
     </dependency>
     <dependency>
       <groupId>com.google.javascript</groupId>
@@ -41,7 +46,7 @@
     <dependency>
       <groupId>com.github.s-expresso</groupId>
       <artifactId>rubberbuf</artifactId>
-      <version>0.1.9.a</version>
+      <version>0.3.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.s-expresso</groupId>

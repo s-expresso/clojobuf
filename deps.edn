@@ -34,4 +34,4 @@
                     :exec-fn deps-deploy.deps-deploy/deploy
                     :exec-args {:installer :remote
                                 :sign-releases? false
-                                :artifact "target/clojobuf-0.1.12.jar"}}}}
+                                :artifact "target/clojobuf-0.2.0.jar"}}}}

@@ -1,12 +1,12 @@
 clojobuf
 =========
 
-clojure(script) library that dynamically interprets protobuf files (.proto) and use the resultant schemas to encode/decode plain clojure(script) map into/from protobuf binaries. Supports both proto2 and proto3.
+clojure(script) library that dynamically interprets protobuf files (.proto) and use the resultant schemas to encode/decode plain clojure(script) map into/from protobuf binaries. Supports proto2, proto3 and edition 2023.
 
 ## TL;DR
 Add the following to deps.edn (or its equivalent for lein).
 ```edn
-{:deps {com.github.s-expresso/clojobuf {:mvn/version "0.1.12"}}}
+{:deps {com.github.s-expresso/clojobuf {:mvn/version "0.2.0"}}}
 ```
 
 Say you have the following `example.proto` file
