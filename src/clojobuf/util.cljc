@@ -26,6 +26,8 @@
 
 (defn default-opt   [options] (->> options (some #(when (= (first %) "default") %)) second))
 
+(defn field-presence-opt [options] (->> options (some #(when (= (first %) "field_presence") %)) second))
+
 (defn default-enum-val
   "Use field's default option if available, else first enum val in enum-def is default."
   [enum-def field-def]

@@ -12,13 +12,24 @@
                                                   "no_package.proto",
                                                   "extension.proto",
                                                   "required.proto", 
-                                                  "implicit.proto"]
+                                                  "implicit.proto"
+                                                  "edition.proto"]
                          :auto-malli-registry false))
 (def malli-schema (second codec_malli))
 (def registry (->malli-registry malli-schema))
 
 (deftest test-schema-:?
   (is (true?  (m/validate [:ref :my.ns.singular/Singular] {:? [[1 2 3]]} registry))))
+
+(deftest test-schema-malli-edition
+  (is (= (malli-schema :my.ns.edition/Edition)
+         [:map
+          {:closed true}
+          [:? {:optional true, :presence :?, :default nil} :any]
+          [:f1 {:optional true, :presence :optional} :int32]
+          [:f2 {:optional true, :presence :optional, :default 42} :int32]
+          [:f3 {:optional true, :presence :implicit} :int32]
+          [:f4 {:presence :required} :int32]])))
 
 (deftest test-schema-malli-enum
   (is (= (malli-schema :my.ns.enum/Enum)
@@ -468,3 +479,4 @@
   (is (= (vschemas-make-defaults test-vschemas)
          {:my.ns/MsgA {:either nil, :int32_val nil, :int64_val nil, :msg_val nil, :enum_val :ZERO},
           :my.ns/MsgB {:field 0}})))
+

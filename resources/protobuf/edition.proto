@@ -1,0 +1,10 @@
+edition = "2023";
+
+package my.ns.edition;
+
+message Edition {
+  int32 f1 = 1;
+  int32 f2 = 2 [default = 42];
+  int32 f3 = 3 [field_presence = IMPLICIT];
+  int32 f4 = 4 [field_presence = LEGACY_REQUIRED];
+}

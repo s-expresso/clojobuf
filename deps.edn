@@ -5,7 +5,7 @@
         org.clojure/clojurescript {:mvn/version "1.11.60"}
         org.clojure/test.check {:mvn/version "0.10.0"}
         com.rpl/specter {:mvn/version "1.1.4"}
-        com.github.s-expresso/rubberbuf {:mvn/version "0.3.0"}
+        com.github.s-expresso/rubberbuf {:mvn/version "0.3.1"}
         com.github.s-expresso/clojobuf-codec {:mvn/version "0.1.6"}
         org.flatland/ordered {:mvn/version "1.15.11"}
         }

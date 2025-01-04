@@ -1,6 +1,6 @@
 (ns clojobuf.schema
   (:require [clojobuf.constant :refer [sint32-max sint32-min sint53-max sint53-min sint64-max sint64-min uint32-max uint32-min uint64-max uint64-min]]
-            [clojobuf.util :refer [dot-qualify default-opt default-pri]]
+            [clojobuf.util :refer [dot-qualify default-opt default-pri field-presence-opt]]
             [clojure.set :refer [map-invert]]
             [clojure.test.check.generators :as gen]
             [flatland.ordered.map :refer [ordered-map]]
@@ -153,16 +153,21 @@
     :else [:maybe typ]))
 
 (defn- vxform-field [syntax [_ rori typ name field-id options]]
-  (let [out (condp = rori
-              :required [(keyword name) {:presence :required} (get-malli-type typ)]
-              :repeated [(keyword name) {:optional true
-                                         :presence :repeated} [:vector (get-malli-type typ)]]
-              :optional [(keyword name) {:optional true
-                                         :presence :optional} (get-opt-malli-type typ)] 
-              [(keyword name) {:optional true
-                               :presence :implicit} (get-malli-type typ)])] 
-    (if-let [default (when (and (= rori :optional)
-                                (not= syntax :proto3)) ; proto3 doesn't allow overriding of default value
+  (let [out (if (= syntax :2023)
+              ; protobuf edition 2023
+              (condp = rori
+                :repeated [(keyword name) {:optional true :presence :repeated} [:vector (get-malli-type typ)]]
+                [(keyword name) (condp = (field-presence-opt options)
+                                  :IMPLICIT        {:optional true  :presence :implicit}
+                                  :LEGACY_REQUIRED {                :presence :required}
+                                                   {:optional true  :presence :optional}) (get-malli-type typ)])
+              ; (or (= syntax :proto2) (= syntax :proto3))
+              (condp = rori
+                :required [(keyword name) {               :presence :required} (get-malli-type typ)]
+                :repeated [(keyword name) {:optional true :presence :repeated} [:vector (get-malli-type typ)]]
+                :optional [(keyword name) {:optional true :presence :optional} (get-opt-malli-type typ)]
+                          [(keyword name) {:optional true :presence :implicit} (get-malli-type typ)]))] 
+    (if-let [default (when (not= syntax :proto3) ; proto3 doesn't allow overriding of default value
                        (default-opt options))]
       [(first out) (assoc (second out) :default default) (last out)]
       out)))
@@ -251,7 +256,8 @@
     (if (>= idx (count ast)) reg ; terminate loop and return reg
         (let [form (nth ast idx)]
           (condp = (first form)
-            :syntax  (recur (inc idx) (keyword (last form)) package     reg)
+            :syntax  (recur (inc idx) (keyword (last form)) package     reg) ; :proto2 or :proto3
+            :edition (recur (inc idx) (keyword (last form)) package     reg) ; :2023
             :package (recur (inc idx) syntax                (last form) reg)
             :message (recur (inc idx) syntax                package     (conj reg (xform-msg syntax package form)))
             :enum    (recur (inc idx) syntax                package     (conj reg (xform-enm syntax package form)))
