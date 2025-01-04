@@ -162,7 +162,7 @@
               [(keyword name) {:optional true
                                :presence :implicit} (get-malli-type typ)])] 
     (if-let [default (when (and (= rori :optional)
-                                (not= syntax 3)) ; proto3 doesn't allow overriding of default value
+                                (not= syntax :proto3)) ; proto3 doesn't allow overriding of default value
                        (default-opt options))]
       [(first out) (assoc (second out) :default default) (last out)]
       out)))
@@ -247,7 +247,7 @@
      * (first vec2)  is n single entry of codec schema
      * (second vec2) is a single entry of malli schema"
   [ast]
-  (loop [idx 0, syntax 3, package "", reg []]
+  (loop [idx 0, syntax :proto3, package "", reg []]
     (if (>= idx (count ast)) reg ; terminate loop and return reg
         (let [form (nth ast idx)]
           (condp = (first form)
