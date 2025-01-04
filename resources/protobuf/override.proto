@@ -1,0 +1,28 @@
+syntax = "proto2";
+
+import "enum.proto";
+
+package my.ns.override;
+
+message Override {
+    // wire-type 0
+    optional int32 int32_val       = 1 [default = 41];
+    optional int64 int64_val       = 2 [default = 42];
+    optional uint32 uint32_val     = 3 [default = 43];
+    optional uint64 uint64_val     = 4 [default = 44];
+    optional sint32 sint32_val     = 5 [default = 45];
+    optional sint64 sint64_val     = 6 [default = 46];
+    optional bool bool_val         = 7 [default = true];
+    optional enum.Enum enum_val    = 8 [default = TWO];
+    // wire-type 1
+    optional fixed64 fixed64_val   = 9 [default = 47];
+    optional sfixed64 sfixed64_val = 10 [default = 48];
+    optional double double_val     = 11 [default = 49.0];
+    // wire-type 2
+    optional string string_val     = 12 [default = "50"];
+    optional bytes bytes_val       = 13;
+    // wire-type 5
+    optional fixed32 fixed32_val   = 14 [default = 51];
+    optional sfixed32 sfixed32_val = 15 [default = 52];    
+    optional float float_val       = 16 [default = 53.0];
+}
