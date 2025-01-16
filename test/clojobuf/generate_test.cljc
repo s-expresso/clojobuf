@@ -22,6 +22,5 @@
            (is (= (codec msg-id msg) msg))))
 
 (deftest test-generate
-  (let [val (generate registry :my.ns.simple/Simple)
-        val (dissoc val :?)]
+  (let [val (generate registry :my.ns.simple/Simple)]
     (rt :my.ns.simple/Simple val)))

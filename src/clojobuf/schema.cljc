@@ -306,6 +306,22 @@
                   update-implicit-property
                   vschemas)))
 
+(defn vschemas-update-generator-fmap
+  "See vschemas-update-msg-field-presence for example input.
+   Changes {... {:close true} ...} to {... {:closed true, :gen/fmap #(dissoc % :?)} ...}"
+  [vschemas]
+  (let [xform (fn [form] (assoc form :gen/fmap #(dissoc % :?)))]
+    (sp/transform [sp/ALL-WITH-META
+                   (sp/nthpath 1)
+                   ; visit all elements of message (:map) type
+                   (sp/cond-path #(= :map (first %)) (sp/nthpath 1)
+                                 #(and (= :and (-> % first)) ; if message contains oneof, top level is [:and [:map ...] ...]
+                                       (= :map (-> % second first))) (sp/nthpath 1 1))
+                   ; only visit property map
+                   (sp/if-path map? sp/STAY)]
+                  xform
+                  vschemas)))
+
 (defn vschemas-make-defaults
   "Make default values from validation schema."
   [vschemas]
