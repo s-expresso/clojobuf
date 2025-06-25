@@ -1,5 +1,8 @@
 Releases
 ========
+# v0.2.1
+* `clojobuf.core/generate` method shouldn't produce :? key https://github.com/s-expresso/clojobuf/issues/6
+* upgrade `rubberbuf` to `v0.3.2` so that protobuf `option` schema with `extensions` can be parsed
 
 # v0.2.0
 * supports protobuf edition 2023

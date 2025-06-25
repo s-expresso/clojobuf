@@ -4,12 +4,12 @@
   <packaging>jar</packaging>
   <groupId>com.github.s-expresso</groupId>
   <artifactId>clojobuf</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
   <name>clojobuf</name>
   <scm>
     <connection>scm:git:git://github.com/s-expresso/clojobuf.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/s-expresso/clojobuf.git</developerConnection>
-    <tag>v0.2.0</tag>
+    <tag>v0.2.1</tag>
     <url>https://github.com/s-expresso/clojobuf</url>
   </scm>
   <dependencies>

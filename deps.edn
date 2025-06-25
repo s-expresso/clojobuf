@@ -29,8 +29,8 @@
            ; update pom.xml and :artifact below first
            ; ensure CLOJARS_USERNAME and CLOJARS_PASSWORD env vars are set
            ; clj -T:deploy
-           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "0.2.0"}}
+           :deploy {:extra-deps {slipset/deps-deploy {:mvn/version "0.2.1"}}
                     :exec-fn deps-deploy.deps-deploy/deploy
                     :exec-args {:installer :remote
                                 :sign-releases? false
-                                :artifact "target/clojobuf-0.2.0.jar"}}}}
+                                :artifact "target/clojobuf-0.2.1.jar"}}}}
